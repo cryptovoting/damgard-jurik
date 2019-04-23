@@ -34,6 +34,8 @@ class TestCrypto(unittest.TestCase):
         ciphertext = ciphertext_1 + ciphertext_2
         decrypted_plaintext = private_key.decrypt(ciphertext)
 
+        self.assertNotEqual(plaintext_1, ciphertext_1.value)
+        self.assertNotEqual(plaintext_2, ciphertext_2.value)
         self.assertEqual(plaintext_1 + plaintext_2, decrypted_plaintext)
 
     def test_homomorphic_multiply(self):
@@ -44,6 +46,7 @@ class TestCrypto(unittest.TestCase):
         ciphertext = ciphertext * scalar
         decrypted_plaintext = private_key.decrypt(ciphertext)
 
+        self.assertNotEqual(plaintext, ciphertext.value)
         self.assertEqual(plaintext * scalar, decrypted_plaintext)
 
 
