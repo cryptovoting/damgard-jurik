@@ -1,21 +1,14 @@
+#!/usr/bin/env python3
 """
-Skeleton code for prime generation (Python 2 or 3)
+prime_gen.py
+Boucher, Govedič, Saowakon, Swanson 2019
 
-Running the module will run doctests, though doctests are definitely not
-comprehensive (for instance, see gen_safe_prime). To turn them off, comment out
-doctests in main(). To run verbose doctests, run with `python prime-gen.py -v`.
+Contains methods for generating prime numbers.
+
 """
-
 from random import randint
 
-
-def powmod(a, b, m):
-    """ Returns the power a**b % m."""
-    if b == 1:
-        return a % m
-    if b % 2 == 0:
-        return powmod(a ** 2 % m, b // 2, m) % m
-    return (a * powmod(a ** 2 % m, (b - 1) // 2, m)) % m
+from crypto_voting.utils import powmod
 
 
 def is_prime(p: int) -> bool:
@@ -70,7 +63,7 @@ def get_order_in_safe_prime(x: int, p: int) -> int:
     return 2 * q
 
 
-def is_quadratic_residue(x, p):
+def is_quadratic_residue(x: int, p: int) -> int:
     """ Checks if x is a quadratic residue in Z_p^*.
 
     x must have order 1 or q (i.e. not 2 or 2q) in Z_p^* to be a quadratic residue.
@@ -80,7 +73,7 @@ def is_quadratic_residue(x, p):
     return get_order_in_safe_prime(x, p) in {1, q}
 
 
-def is_quadratic_residue_generator(g, p):
+def is_quadratic_residue_generator(g: int, p: int) -> int:
     """ Checks if g is a generator of the group Q_p^* of quadratic residues of Z_p^*.
 
     g must have order q in Z_p^* in order for g to be a generator of Q_p^*.

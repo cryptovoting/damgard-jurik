@@ -5,35 +5,51 @@ Boucher, Govedič, Saowakon, Swanson 2019
 
 Contains a set of interfaces for interacting with cryptographic values
 and functions, such as:
-- Plaintext and Ciphertext
 - Public and Private Keys
+- Encrypted Number
 - Key Generation, Encryption, and Decryption
 - Homomorphic Operations
 
 """
-from abc import ABC
-from typing import Tuple
+from typing import Any, Tuple
 
-from phe.paillier import EncryptedNumber, generate_paillier_keypair, PaillierPrivateKey, PaillierPublicKey
+from phe.paillier import EncryptedNumber as PaillierEncryptedNumber
+from phe.paillier import generate_paillier_keypair, PaillierPrivateKey, PaillierPublicKey
+
+from crypto_voting.utils import powmod
 
 
-class Text(ABC):
-    """ Abstract class for plaintext and ciphertext. """
-    def __init__(self, value: int):
+class EncryptedNumber:
+    def __init__(self, public_key: 'PublicKey', value: int):
+        self.public_key = public_key
         self.value = value
 
-    def __repr__(self) -> str:
-        return str(self.value)
+    def __add__(self, other: Any) -> 'EncryptedNumber':
+        if not isinstance(other, EncryptedNumber):
+            raise ValueError('Can only add an EncryptedNumber to another EncryptedNumber')
 
+        if self.public_key != other.public_key:
+            raise ValueError("Attempted to add numbers encrypted against different public keys!")
 
-class Plaintext(Text):
-    """ Plaintext. """
-    pass
+        return EncryptedNumber(
+            public_key=self.public_key,
+            value=((self.value * other.value) % self.public_key.n_square)
+        )
 
+    def __radd__(self, other: Any) -> 'EncryptedNumber':
+        return self.__add__(other)
 
-class Ciphertext(Text):
-    """ Ciphertext. """
-    pass
+    def __mul__(self, other: int) -> 'EncryptedNumber':
+        if not isinstance(other, int):
+            raise ValueError('Can only multiply an EncryptedNumber by an int')
+
+        return EncryptedNumber(
+            public_key=self.public_key,
+            value=powmod(self.value, other, self.public_key.n_square)
+        )
+
+    def __rmul__(self, other: Any) -> 'EncryptedNumber':
+        return self.__mul__(other)
 
 
 # TODO: replace phe library with custom implementation
@@ -41,13 +57,20 @@ class PublicKey:
     def __init__(self, n: int):
         self.g = n + 1
         self.n = n
+        self.n_square = n * n
         self._public_key = PaillierPublicKey(self.n)
 
-    def encrypt(self, plaintext: Plaintext) -> Ciphertext:
-        ciphertext = self._public_key.encrypt(plaintext.value)
-        ciphertext = Ciphertext(ciphertext.ciphertext())
+    def encrypt(self, plaintext: int) -> EncryptedNumber:
+        ciphertext = self._public_key.encrypt(plaintext)
+        ciphertext = EncryptedNumber(public_key=self, value=ciphertext.ciphertext(be_secure=False))
 
         return ciphertext
+
+    def __eq__(self, other: Any) -> bool:
+        if not isinstance(other, PublicKey):
+            return False
+
+        return self.n == other.n
 
 
 class PrivateKey:
@@ -58,9 +81,8 @@ class PrivateKey:
         self._public_key = PaillierPublicKey(self.public_key.n)
         self._private_key = PaillierPrivateKey(self._public_key, self.lam, self.mu)
 
-    def decrypt(self, ciphertext: Ciphertext) -> Plaintext:
-        plaintext = self._private_key.decrypt(EncryptedNumber(self._public_key, ciphertext.value))
-        plaintext = Plaintext(plaintext)
+    def decrypt(self, ciphertext: EncryptedNumber) -> int:
+        plaintext = self._private_key.decrypt(PaillierEncryptedNumber(self._public_key, ciphertext.value))
 
         return plaintext
 
