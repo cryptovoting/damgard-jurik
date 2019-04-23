@@ -14,7 +14,8 @@ used in the ShuffleSum voting algorithm, including:
 from abc import ABC
 from typing import List
 
-from crypto import Ciphertext, Plaintext
+from crypto_voting.crypto import Ciphertext, Plaintext
+
 
 class Ballot(ABC):
     """ Abstract class for all ballots """
@@ -30,6 +31,13 @@ class PreferenceOrderBallot(Ballot):
         self.weight = weight
 
 
+class FirstPreferenceBallot(Ballot):
+    """ Ballot in candidate order with encrypted weight for each candidate. """
+    def __init__(self, candidates: List[Plaintext], weights: List[Ciphertext]):
+        self.candidates = candidates
+        self.weights = weights
+
+
 class CandidateOrderBallot(Ballot):
     """ The voter orders the canditades by preference.
         Preferences are hidden, candidates are known """"
@@ -43,12 +51,6 @@ class CandidateOrderBallot(Ballot):
 
     def to_candidate_elimination(self) -> CandidateEliminationBallot:
         raise NotImplementedError
-
-class FirstPreferenceBallot(Ballot):
-    """ Ballot in candidate order with encrypted weight for each candidate. """
-    def __init__(self, candidates: List[Plaintext], weights: List[Ciphertext]):
-        self.candidates = candidates
-        self.weights = weights
 
 class CandidateEliminationBallot(Ballot):
     """ Ballot in preference order with encrypted candidates and encrypted
