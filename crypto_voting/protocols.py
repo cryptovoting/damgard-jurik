@@ -38,15 +38,47 @@ def eliminate_candidate_set(candidate_set: List[int], ballots: List[CandidateOrd
         result.append(CandidateOrderBallot(updated_candidates, updated_preferences, cob.weight))
     return result
 
-def compute_first_preference_tallies(candidates: List[int], ballots: List[CandidateOrderBallot], private_key: PrivateKey, public_key: PublicKey) -> List[int]:
-    """ Compute First-Preference Tallies (1b) """
+def compute_first_preference_tallies(ballots: List[CandidateOrderBallot], private_key: PrivateKey, public_key: PublicKey) -> List[int]:
+    """ Compute First-Preference Tallies (1b)
+        Assumes there is at least one ballot.   """
     # Initialization
-    m = len(candidates)
+    m = len(ballots[0].candidates)
     encrypted_tallies = [public_key.encrypt(0) for i in range(m)]
     # Perform computation
     for ballot in ballots:
         fpb = ballot.to_first_preference(private_key, public_key)
         for i in range(m):
-            encrypted_tallies[i] += fbp.weights[i]
+            encrypted_tallies[i] += fpb.weights[i]
     # Return the result
     return [private_key.decrypt(encrypted_tally) for encrypted_tally in encrypted_tallies]
+
+def reweight_votes(ballots: List[CandidateOrderBallot], elected: List[int], q: int) -> List[CandidateOrderBallot]:
+    raise NotImplementedError
+
+def stv_tally(ballots: List[CandidateOrderBallot], seats: int, private_key: PrivateKey, public_key: PublicKey) -> List[int]:
+    """ The main protocol of the ShuffleSum voting algorithm.
+        Assumes there is at least one ballot.
+        Returns a list of elected candidates. """
+    if len(ballots) == 0:
+        raise ValueError
+    c_rem = ballots[0].candidates       # the remaining candidates
+    q = len(ballots)//(seats+1) + 1     # the quota required for election
+    result = []
+    while len(c_rem) > seats:
+        t = compute_first_preference_tallies(ballots, private_key, public_key)
+        elected = []
+        for i in range(len(c_rem)):
+            if t[i] >= q:               # NOTE: Not sure if it needs to be >= or >
+                elected.append(ballots[0].candidates[i])
+        if len(elected) > 0:
+            result += elected
+            ballots = reweight_votes(ballots, elected, q)
+            ballots = eliminate_candidate_set(elected, ballots, private_key, public_key)
+        else:
+            i = 0
+            for j in range(len(c_rem)):
+                if t[j] < t[i]:
+                    i = j
+            ballots = eliminate_candidate_set([i], ballots, private_key, public_key)
+        c_rem = ballots[0].candidates
+    return result
