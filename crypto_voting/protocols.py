@@ -13,8 +13,8 @@ from crypto_voting.crypto import EncryptedNumber, PrivateKey, PublicKey
 
 from crypto_voting.ballots import PreferenceOrderBallot, FirstPreferenceBallot, CandidateOrderBallot, CandidateEliminationBallot
 
-def eliminate_candidate_set(candidate_set: List[int], ballots: List[CandidateOrderBallot], private_key: PrivateKey, public_key: PublicKey):
-    """ Eliminate the given candidate set. """
+def eliminate_candidate_set(candidate_set: List[int], ballots: List[CandidateOrderBallot], private_key: PrivateKey, public_key: PublicKey) -> List[CandidateOrderBallot]:
+    """ Eliminate the given candidate set (1d) """
     # Deal with an empty set of ballots, just in case
     if len(ballots) == 0:
         return []
@@ -37,3 +37,16 @@ def eliminate_candidate_set(candidate_set: List[int], ballots: List[CandidateOrd
         updated_preferences = [cob.preferences[i] for i in relevant_columns]
         result.append(CandidateOrderBallot(updated_candidates, updated_preferences, cob.weight))
     return result
+
+def compute_first_preference_tallies(candidates: List[int], ballots: List[CandidateOrderBallot], private_key: PrivateKey, public_key: PublicKey) -> List[int]:
+    """ Compute First-Preference Tallies (1b) """
+    # Initialization
+    m = len(candidates)
+    encrypted_tallies = [public_key.encrypt(0) for i in range(m)]
+    # Perform computation
+    for ballot in ballots:
+        fpb = ballot.to_first_preference(private_key, public_key)
+        for i in range(m):
+            encrypted_tallies[i] += fbp.weights[i]
+    # Return the result
+    return [private_key.decrypt(encrypted_tally) for encrypted_tally in encrypted_tallies]
