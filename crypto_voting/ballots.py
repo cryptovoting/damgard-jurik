@@ -129,11 +129,29 @@ class CandidateOrderBallot(Ballot):
 class CandidateEliminationBallot(Ballot):
     """ Ballot in preference order with encrypted candidates and encrypted
         binary elimination vector. """
-    def __init__(self, candidates: List[int], preferences: List[EncryptedNumber], eliminated: List[EncryptedNumber]):
+    def __init__(self, candidates: List[EncryptedNumber], preferences: List[EncryptedNumber], eliminated: List[EncryptedNumber], weight: EncryptedNumber):
         self.candidates = candidates
         self.preferences = preferences
         self.eliminated = eliminated
+        self.weight = weight
 
-    def candidate_elimination_to_candidate_order(self, private_key: PrivateKey, public_key: PublicKey) -> CandidateOrderBallot:
+    def to_candidate_order(self, private_key: PrivateKey, public_key: PublicKey) -> CandidateOrderBallot:
         """ Converts a candidate elimination ballot into a candidate order ballot. """
-        raise NotImplementedError
+        # Initialization
+        n = len(self.candidates)
+        candidates = self.candidates
+        preferences = self.preferences
+        eliminated = self.eliminated
+        weight = self.weight
+        # Step 1: Shuffle the table columns
+        candidates, preferences, eliminated = self.shuffle(candidates, preferences, eliminated)
+        # Step 2: Threshold decrypt the candidate row
+        candidates = [private_key.decrypt(candidate) for candidate in candidates]
+        # Step 3: Sort the table columns by candidate
+        tmp = [(candidates[i], preferences[i], eliminated[i]) for i in range(n)]
+        tmp.sort()
+        candidates = [tmp[i][0] for i in range(n)]
+        preferences = [tmp[i][1] for i in range(n)]
+        eliminated = [tmp[i][2] for i in range(n)]
+        # Return the result
+        return CandidateOrderBallot(candidates, preferences, weight)
