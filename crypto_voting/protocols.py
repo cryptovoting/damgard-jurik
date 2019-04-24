@@ -7,6 +7,8 @@ Contains main protocols for the ShuffleSum voting algorithm.
 
 """
 
+from typing import List
+
 from crypto_voting.crypto import EncryptedNumber, PrivateKey, PublicKey
 
 from crypto_voting.ballots import PreferenceOrderBallot, FirstPreferenceBallot, CandidateOrderBallot, CandidateEliminationBallot
