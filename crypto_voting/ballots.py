@@ -13,13 +13,31 @@ used in the ShuffleSum voting algorithm, including:
 """
 from abc import ABC
 from typing import List
+from secrets import randbelow
 
-from crypto_voting.crypto import EncryptedNumber
+from crypto_voting.crypto import EncryptedNumber, PrivateKey, PublicKey
 
 
 class Ballot(ABC):
     """ Abstract class for all ballots """
-    pass
+
+    def shuffle(*rows):
+        """ Given some number of lists, performs the same random element-wise
+            permutation on each list. Useful for shuffling columns in
+            ShuffleSum.
+
+            Example usage:
+                candidates,preferences,weights = shuffle(candidates, preferences, weights)
+        """
+        columns = list(zip(*rows))
+        # Perform a Fisher-Yates shuffle using cryptographically secure randomness
+        n = len(columns)
+        for i in range(n-1):
+            # i <= j < n
+            j = randbelow(n-i) + i
+            columns[i], columns[j] = columns[j], columns[i]
+        # Return translation of columns back to rows
+        return [list(t) for t in zip(*columns)]
 
 
 class PreferenceOrderBallot(Ballot):
@@ -66,7 +84,7 @@ def candidate_order_to_first_preference(ballot: CandidateOrderBallot, private_ke
     # Step 1: Encrypt the candidate row
     candidates = [public_key.encrypt(candidate) for candidate in candidates]
     # Step 2: Shuffle the table columns (TO-DO)
-    raise NotImplementedError
+    candidates, preferences = ballot.shuffle(candidates, preferences)
     # Step 3: Threshold decrypt the preference row
     preferences = [private_key.decrypt(preference) for preference in preferences]
     # Step 4: Sort columns in preference order
@@ -80,7 +98,7 @@ def candidate_order_to_first_preference(ballot: CandidateOrderBallot, private_ke
     # Step 6: Encrypt the preference row
     preferences = [public_key.encrypt(preference) for preference in preferences]
     # Step 7: Shuffle the table columns (TO-DO)
-    raise NotImplementedError
+    candidates, weights = ballot.shuffle(candidates, weights)
     # Step 8: Threshold decrypt the candidate row
     candidates = [private_key.decrypt(candidate) for candidate in candidates]
     # Step 9: Sort columns in candidate order
@@ -104,7 +122,7 @@ def candidate_order_to_candidate_elimination(ballot: CandidateOrderBallot, elimi
     # Step 2: Encrypt the candidate row
     candidates = [public_key.encrypt(candidate) for candidate in candidates]
     # Step 3: Shuffle the table columns (TO-DO)
-    raise NotImplementedError
+    candidates, preferences, eliminated = ballot.shuffle(candidates, preferences, eliminated)
     # Step 4: Threshold decrypt the preference row
     preferences = [private_key.decrypt(preference) for preference in preferences]
     # Step 5: Sort the table columns by preference
