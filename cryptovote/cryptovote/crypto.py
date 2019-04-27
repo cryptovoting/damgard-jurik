@@ -16,7 +16,7 @@ from typing import Any, Tuple
 from phe.paillier import EncryptedNumber as PaillierEncryptedNumber
 from phe.paillier import generate_paillier_keypair, PaillierPrivateKey, PaillierPublicKey
 
-from crypto_voting.utils import powmod
+from cryptovote.utils import powmod
 
 
 class EncryptedNumber:
