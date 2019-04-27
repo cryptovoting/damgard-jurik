@@ -1,7 +1,7 @@
 import unittest
 
-from crypto_voting.ballots import Ballot, CandidateOrderBallot, FirstPreferenceBallot
-from crypto_voting.crypto import generate_paillier_keypair, PublicKey, PrivateKey
+from cryptovote.cryptovote.ballots import Ballot, CandidateOrderBallot, FirstPreferenceBallot
+from cryptovote.cryptovote.crypto import generate_paillier_keypair, PublicKey, PrivateKey
 
 
 class TestBallots(unittest.TestCase):
