@@ -21,6 +21,7 @@ from crypto_voting.crypto import EncryptedNumber, PrivateKey, PublicKey
 class Ballot(ABC):
     """ Abstract class for all ballots """
 
+    @staticmethod
     def shuffle(*rows):
         """ Given some number of lists, performs the same random element-wise
             permutation on each list. Useful for shuffling columns in
@@ -32,9 +33,9 @@ class Ballot(ABC):
         columns = list(zip(*rows))
         # Perform a Fisher-Yates shuffle using cryptographically secure randomness
         n = len(columns)
-        for i in range(n-1):
+        for i in range(n - 1):
             # i <= j < n
-            j = randbelow(n-i) + i
+            j = randbelow(n - i) + i
             columns[i], columns[j] = columns[j], columns[i]
         # Return translation of columns back to rows
         return [list(t) for t in zip(*columns)]
@@ -43,6 +44,7 @@ class Ballot(ABC):
 class PreferenceOrderBallot(Ballot):
     """ The voter orders the candidades by preference.
         Preferences are known, candidates are hidden. """
+
     def __init__(self, candidates: List[EncryptedNumber], preferences: List[int], weight: EncryptedNumber):
         self.candidates = candidates
         self.preferences = preferences
@@ -51,6 +53,7 @@ class PreferenceOrderBallot(Ballot):
 
 class FirstPreferenceBallot(Ballot):
     """ Ballot in candidate order with encrypted weight for each candidate. """
+
     def __init__(self, candidates: List[int], weights: List[EncryptedNumber]):
         self.candidates = candidates
         self.weights = weights
@@ -59,6 +62,7 @@ class FirstPreferenceBallot(Ballot):
 class CandidateOrderBallot(Ballot):
     """ The voter orders the canditades by preference.
         Preferences are hidden, candidates are known. """
+
     def __init__(self, candidates: List[int], preferences: List[EncryptedNumber], weight: EncryptedNumber):
         self.candidates = candidates
         self.preferences = preferences
@@ -85,6 +89,7 @@ class CandidateOrderBallot(Ballot):
         # Step 5: Add a weights row
         weights = [public_key.encrypt(0) for i in range(n)]
         weights[0] = public_key.encrypt(weight)
+
         # Step 6: Encrypt the preference row
         preferences = [public_key.encrypt(preference) for preference in preferences]
         # Step 7: Shuffle the table columns
@@ -92,13 +97,14 @@ class CandidateOrderBallot(Ballot):
         # Step 8: Threshold decrypt the candidate row
         candidates = [private_key.decrypt(candidate) for candidate in candidates]
         # Step 9: Sort columns in candidate order
-        tmp = [(candidate[i], weights[i]) for i in range(n)]
+        tmp = [(candidates[i], weights[i]) for i in range(n)]
         candidates = [tmp[i][0] for i in range(n)]
         weights = [tmp[i][1] for i in range(n)]
         # Return the result
         return FirstPreferenceBallot(candidates, weights)
 
-    def to_candidate_elimination(self, eliminated: List[int], private_key: PrivateKey, public_key: PublicKey, ) -> Ballot:
+    def to_candidate_elimination(self, eliminated: List[int], private_key: PrivateKey,
+                                 public_key: PublicKey, ) -> Ballot:
         """ Converts a candidate order ballot into a candidate elimination ballot.
             Assumes eliminated is a list of either 0 or 1, *unencrypted*. """
         # Initialization
@@ -129,7 +135,9 @@ class CandidateOrderBallot(Ballot):
 class CandidateEliminationBallot(Ballot):
     """ Ballot in preference order with encrypted candidates and encrypted
         binary elimination vector. """
-    def __init__(self, candidates: List[EncryptedNumber], preferences: List[EncryptedNumber], eliminated: List[EncryptedNumber], weight: EncryptedNumber):
+
+    def __init__(self, candidates: List[EncryptedNumber], preferences: List[EncryptedNumber],
+                 eliminated: List[EncryptedNumber], weight: EncryptedNumber):
         self.candidates = candidates
         self.preferences = preferences
         self.eliminated = eliminated

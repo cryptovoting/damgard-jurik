@@ -15,6 +15,8 @@ sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 from crypto_voting.crypto import keygen
 
 
+
+
 class TestCrypto(unittest.TestCase):
     def test_encrypt_decrypt(self):
         public_key, private_key = keygen(n_bits=2048)
