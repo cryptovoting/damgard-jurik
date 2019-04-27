@@ -75,20 +75,25 @@ class CandidateOrderBallot(Ballot):
         candidates = self.candidates
         preferences = self.preferences
         weight = self.weight
+
         # Step 1: Encrypt the candidate row
         candidates = [public_key.encrypt(candidate) for candidate in candidates]
-        # Step 2: Shuffle the table columns (TO-DO)
+
+        # Step 2: Shuffle the table columns
         candidates, preferences = self.shuffle(candidates, preferences)
+
         # Step 3: Threshold decrypt the preference row
         preferences = [private_key.decrypt(preference) for preference in preferences]
+
         # Step 4: Sort columns in preference order
         tmp = [(preferences[i], candidates[i]) for i in range(n)]
         tmp.sort()
         preferences = [tmp[i][0] for i in range(n)]
         candidates = [tmp[i][1] for i in range(n)]
+
         # Step 5: Add a weights row
         weights = [public_key.encrypt(0) for i in range(n)]
-        weights[0] = public_key.encrypt(weight)
+        weights[0] = weight
 
         # Step 6: Encrypt the preference row
         preferences = [public_key.encrypt(preference) for preference in preferences]
@@ -98,6 +103,7 @@ class CandidateOrderBallot(Ballot):
         candidates = [private_key.decrypt(candidate) for candidate in candidates]
         # Step 9: Sort columns in candidate order
         tmp = [(candidates[i], weights[i]) for i in range(n)]
+        tmp.sort()
         candidates = [tmp[i][0] for i in range(n)]
         weights = [tmp[i][1] for i in range(n)]
         # Return the result
@@ -127,9 +133,9 @@ class CandidateOrderBallot(Ballot):
         candidates = [tmp[i][1] for i in range(n)]
         eliminated = [tmp[i][2] for i in range(n)]
         # Step 6: Encrypt the preference row
-        preferences = [private_key.encrypt(preference) for preference in preferences]
+        preferences = [public_key.encrypt(preference) for preference in preferences]
         # Return the result
-        return CandidateEliminationBallot(candidates, preferences, eliminated)
+        return CandidateEliminationBallot(candidates, preferences, eliminated, )
 
 
 class CandidateEliminationBallot(Ballot):

@@ -1,6 +1,7 @@
 import unittest
 
-from crypto_voting.ballots import Ballot
+from crypto_voting.ballots import Ballot, CandidateOrderBallot, FirstPreferenceBallot
+from crypto_voting.crypto import generate_paillier_keypair, PublicKey, PrivateKey
 
 
 class TestBallots(unittest.TestCase):
@@ -29,6 +30,26 @@ class TestBallots(unittest.TestCase):
                              "Elements in the second list must maintain their relative order to the first one")
             self.assertEqual(result[2], expected_2,
                              "Elements in the third list must maintain their relative order to the first one")
+
+
+class TestCandidateOrderBallot(unittest.TestCase):
+    def test_toFirstPrefBallot(self):
+        public_key, private_key = generate_paillier_keypair()
+
+        candidates = [0, 1, 2, 3, 4, 5]
+        weight = 0.8
+        preferences = [1, 5, 0, 2, 4, 3]
+        first_preferences = [0, 0, weight, 0, 0, 0]
+        ballot1 = CandidateOrderBallot(candidates, [public_key.encrypt(pref) for pref in preferences],
+                                       public_key.encrypt(weight))
+
+        result = ballot1.to_first_preference(private_key, public_key)
+        self.assertIsInstance(result, FirstPreferenceBallot,
+                              "The returned ballot must be of type FirstPreferenceBallot")
+
+        self.assertListEqual(result.candidates, candidates, "The candidates lists must match")
+        self.assertListEqual([private_key.decrypt(w) for w in result.weights], first_preferences,
+                             "The weights lists must match")
 
 
 if __name__ == '__main__':

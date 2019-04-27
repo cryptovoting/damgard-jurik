@@ -51,6 +51,9 @@ class EncryptedNumber:
     def __rmul__(self, other: Any) -> 'EncryptedNumber':
         return self.__mul__(other)
 
+    def __eq__(self, other):
+        return self.value == other.value
+
 
 # TODO: replace phe library with custom implementation
 class PublicKey:

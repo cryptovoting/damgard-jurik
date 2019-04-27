@@ -11,3 +11,5 @@ git clone https://github.com/swansonk14/crypto-voting.git
 cd crypto-voting
 pip install -r requirements.txt
 ```
+
+[Shuffle sum paper](https://talmoran.net/papers/BMNRT09-shuffle-sum.pdf?fbclid=IwAR0jZ18H2ZYMsCjPkW-3ohDNom5UjbK-jMen6_lISVoWJJnPWM0A41KAS1Y)
