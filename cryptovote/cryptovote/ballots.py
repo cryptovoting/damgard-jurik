@@ -15,7 +15,7 @@ from abc import ABC
 from typing import List
 from secrets import randbelow
 
-from crypto_voting.crypto import EncryptedNumber, PrivateKey, PublicKey
+from cryptovote.crypto import EncryptedNumber, PrivateKey, PublicKey
 
 
 class Ballot(ABC):

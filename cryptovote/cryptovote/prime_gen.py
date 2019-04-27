@@ -8,7 +8,7 @@ Contains methods for generating prime numbers.
 """
 from random import randint
 
-from crypto_voting.utils import powmod
+from cryptovote.utils import powmod
 
 
 def is_prime(p: int) -> bool:

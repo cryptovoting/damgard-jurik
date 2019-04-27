@@ -9,9 +9,9 @@ Contains main protocols for the ShuffleSum voting algorithm.
 
 from typing import List
 
-from crypto_voting.crypto import EncryptedNumber, PrivateKey, PublicKey
+from cryptovote.crypto import EncryptedNumber, PrivateKey, PublicKey
 
-from crypto_voting.ballots import PreferenceOrderBallot, FirstPreferenceBallot, CandidateOrderBallot, CandidateEliminationBallot
+from cryptovote.ballots import PreferenceOrderBallot, FirstPreferenceBallot, CandidateOrderBallot, CandidateEliminationBallot
 
 def eliminate_candidate_set(candidate_set: List[int], ballots: List[CandidateOrderBallot], private_key: PrivateKey, public_key: PublicKey) -> List[CandidateOrderBallot]:
     """ Eliminate the given candidate set (1d) """
