@@ -13,6 +13,8 @@ from crypto_voting.crypto import EncryptedNumber, PrivateKey, PublicKey
 
 from crypto_voting.ballots import PreferenceOrderBallot, FirstPreferenceBallot, CandidateOrderBallot, CandidateEliminationBallot
 
+from crypto_voting.utils import lcm
+
 def eliminate_candidate_set(candidate_set: List[int], ballots: List[CandidateOrderBallot], private_key: PrivateKey, public_key: PublicKey) -> List[CandidateOrderBallot]:
     """ Eliminate the given candidate set (1d) """
     # Deal with an empty set of ballots, just in case
@@ -52,8 +54,31 @@ def compute_first_preference_tallies(ballots: List[CandidateOrderBallot], privat
     # Return the result
     return [private_key.decrypt(encrypted_tally) for encrypted_tally in encrypted_tallies]
 
-def reweight_votes(ballots: List[CandidateOrderBallot], elected: List[int], q: int) -> List[CandidateOrderBallot]:
-    raise NotImplementedError
+def reweight_votes(ballots: List[FirstPreferenceBallot], elected: List[int], q: int, t: List[int], private_key: PrivateKey, public_key: PublicKey) -> List[CandidateOrderBallot]:
+    """ Reweight the votes for elected candidates in S with quota q. """
+    if len(ballots) == 0:
+        raise ValueError
+    candidates = ballots[0].candidates
+    m = len(candidates)
+    d_lcm = 1
+    for i in range(m):
+        # only consider the elected candidates
+        if candidates[i] not in elected:
+            continue
+        d_lcm = lcm(d_lcm, t[i])
+    result = []
+    for ballot in ballots:
+        new_weight = private_key.encrypt(0)
+        for i in range(m):
+            ballot.weights[i] *= d_lcm
+            if candidates[i] in elected:
+                ballot.weights[i] *= t[i]-q
+                ballot.weights[i] /= t[i]
+            new_weight += ballot.weights[i]
+        result.append(CandidateOrderBallot(ballot.candidates, ballot.preferences, new_weight))
+    return result
+
+        
 
 def stv_tally(ballots: List[CandidateOrderBallot], seats: int, private_key: PrivateKey, public_key: PublicKey) -> List[int]:
     """ The main protocol of the ShuffleSum voting algorithm.
@@ -72,7 +97,7 @@ def stv_tally(ballots: List[CandidateOrderBallot], seats: int, private_key: Priv
                 elected.append(ballots[0].candidates[i])
         if len(elected) > 0:
             result += elected
-            ballots = reweight_votes(ballots, elected, q)
+            ballots = reweight_votes(ballots, elected, q, t)
             ballots = eliminate_candidate_set(elected, ballots, private_key, public_key)
         else:
             i = 0

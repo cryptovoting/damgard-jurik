@@ -51,8 +51,9 @@ class PreferenceOrderBallot(Ballot):
 
 class FirstPreferenceBallot(Ballot):
     """ Ballot in candidate order with encrypted weight for each candidate. """
-    def __init__(self, candidates: List[int], weights: List[EncryptedNumber]):
+    def __init__(self, candidates: List[int], preferences: List[EncryptedNumber], weights: List[EncryptedNumber]):
         self.candidates = candidates
+        self.preferences = preferences
         self.weights = weights
 
 
@@ -92,11 +93,12 @@ class CandidateOrderBallot(Ballot):
         # Step 8: Threshold decrypt the candidate row
         candidates = [private_key.decrypt(candidate) for candidate in candidates]
         # Step 9: Sort columns in candidate order
-        tmp = [(candidate[i], weights[i]) for i in range(n)]
+        tmp = [(candidates[i], preferences[i], weights[i]) for i in range(n)]
         candidates = [tmp[i][0] for i in range(n)]
-        weights = [tmp[i][1] for i in range(n)]
+        preferences = [tmp[i][1] for i in range(n)]
+        weights = [tmp[i][2] for i in range(n)]
         # Return the result
-        return FirstPreferenceBallot(candidates, weights)
+        return FirstPreferenceBallot(candidates, preferences, weights)
 
     def to_candidate_elimination(self, eliminated: List[int], private_key: PrivateKey, public_key: PublicKey, ) -> Ballot:
         """ Converts a candidate order ballot into a candidate elimination ballot.
@@ -123,7 +125,7 @@ class CandidateOrderBallot(Ballot):
         # Step 6: Encrypt the preference row
         preferences = [private_key.encrypt(preference) for preference in preferences]
         # Return the result
-        return CandidateEliminationBallot(candidates, preferences, eliminated)
+        return CandidateEliminationBallot(candidates, preferences, eliminated, weight)
 
 
 class CandidateEliminationBallot(Ballot):
