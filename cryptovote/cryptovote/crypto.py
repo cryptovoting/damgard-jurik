@@ -16,7 +16,7 @@ from typing import Any, Tuple
 from phe.paillier import EncryptedNumber as PaillierEncryptedNumber
 from phe.paillier import generate_paillier_keypair, PaillierPrivateKey, PaillierPublicKey
 
-from crypto_voting.utils import powmod
+from cryptovote.utils import powmod
 
 
 class EncryptedNumber:
@@ -50,6 +50,9 @@ class EncryptedNumber:
 
     def __rmul__(self, other: Any) -> 'EncryptedNumber':
         return self.__mul__(other)
+
+    def __eq__(self, other):
+        return self.value == other.value
 
 
 # TODO: replace phe library with custom implementation
