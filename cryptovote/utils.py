@@ -11,6 +11,10 @@ from operator import mul
 from typing import List, Tuple
 
 
+def prod(nums: List[int]) -> int:
+    return reduce(mul, nums)
+
+
 def gcd(a: int, b: int) -> int:
     """ Find the greatest common divisor of two integers. """
     return a if b == 0 else gcd(b, a % b)
@@ -42,7 +46,7 @@ def extended_euclidean(a: int, b: int) -> Tuple[int, int]:
     return x, y
 
 
-def inverse_mod(a: int, m: int) -> int:
+def inv_mod(a: int, m: int) -> int:
     """ Finds the inverse of a modulo m."""
     # a and m must be coprime to find an inverse
     if gcd(a, m) == 1:
@@ -59,9 +63,9 @@ def crm(a_list: List[int], n_list: List[int]) -> int:
 
     Finds the unique x such that x = a_i (mod n_i) for all i.
     """
-    N = reduce(mul, n_list)
+    N = prod(n_list)
     y_list = [N // n_i for n_i in n_list]
-    z_list = [inverse_mod(y_i, n_i) for y_i, n_i in zip(y_list, n_list)]
+    z_list = [inv_mod(y_i, n_i) for y_i, n_i in zip(y_list, n_list)]
     x = sum(a_i * y_i * z_i for a_i, y_i, z_i in zip(a_list, y_list, z_list))
 
     return x
