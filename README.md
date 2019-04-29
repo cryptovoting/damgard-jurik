@@ -8,6 +8,7 @@ Requires Python 3.6+.
 
 ```
 git clone https://github.com/swansonk14/crypto-voting.git
+cd crypto-voting
 pip install -e .
 ```
 *Note that the `-e` flag will instruct pip to install the package as "editable". That is, when changes are made to any part of the package during development, those changes will immediately be available system-wide on the activated python environment.*
