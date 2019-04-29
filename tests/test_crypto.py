@@ -12,7 +12,7 @@ import unittest
 
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
-from cryptovote.cryptovote.crypto import keygen
+from cryptovote.crypto import keygen
 
 
 class TestCrypto(unittest.TestCase):

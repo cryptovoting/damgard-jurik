@@ -16,7 +16,7 @@ from typing import Any, Tuple
 from phe.paillier import EncryptedNumber as PaillierEncryptedNumber
 from phe.paillier import generate_paillier_keypair, PaillierPrivateKey, PaillierPublicKey
 
-from cryptovote.utils import powmod
+from cryptovote.utils import pow_mod
 
 
 class EncryptedNumber:
@@ -45,7 +45,7 @@ class EncryptedNumber:
 
         return EncryptedNumber(
             public_key=self.public_key,
-            value=powmod(self.value, other, self.public_key.n_square)
+            value=pow_mod(self.value, other, self.public_key.n_square)
         )
 
     def __rmul__(self, other: Any) -> 'EncryptedNumber':

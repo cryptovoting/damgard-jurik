@@ -9,11 +9,10 @@ Contains main protocols for the ShuffleSum voting algorithm.
 
 from typing import List
 
-from cryptovote.crypto import EncryptedNumber, PrivateKey, PublicKey
-
 from cryptovote.ballots import PreferenceOrderBallot, FirstPreferenceBallot, CandidateOrderBallot, CandidateEliminationBallot
+from cryptovote.crypto import EncryptedNumber, PrivateKey, PublicKey
+from cryptovote.utils import lcm
 
-from crypto_voting.utils import lcm
 
 def eliminate_candidate_set(candidate_set: List[int], ballots: List[CandidateOrderBallot], private_key: PrivateKey, public_key: PublicKey) -> List[CandidateOrderBallot]:
     """ Eliminate the given candidate set (1d) """
@@ -40,6 +39,7 @@ def eliminate_candidate_set(candidate_set: List[int], ballots: List[CandidateOrd
         result.append(CandidateOrderBallot(updated_candidates, updated_preferences, cob.weight))
     return result
 
+
 def compute_first_preference_tallies(ballots: List[CandidateOrderBallot], private_key: PrivateKey, public_key: PublicKey) -> List[int]:
     """ Compute First-Preference Tallies (1b)
         Assumes there is at least one ballot.   """
@@ -53,6 +53,7 @@ def compute_first_preference_tallies(ballots: List[CandidateOrderBallot], privat
             encrypted_tallies[i] += fpb.weights[i]
     # Return the result
     return [private_key.decrypt(encrypted_tally) for encrypted_tally in encrypted_tallies]
+
 
 def reweight_votes(ballots: List[FirstPreferenceBallot], elected: List[int], q: int, t: List[int], private_key: PrivateKey, public_key: PublicKey) -> List[CandidateOrderBallot]:
     """ Reweight the votes for elected candidates in S with quota q. """
@@ -78,7 +79,6 @@ def reweight_votes(ballots: List[FirstPreferenceBallot], elected: List[int], q: 
         result.append(CandidateOrderBallot(ballot.candidates, ballot.preferences, new_weight))
     return result
 
-        
 
 def stv_tally(ballots: List[CandidateOrderBallot], seats: int, private_key: PrivateKey, public_key: PublicKey) -> List[int]:
     """ The main protocol of the ShuffleSum voting algorithm.
