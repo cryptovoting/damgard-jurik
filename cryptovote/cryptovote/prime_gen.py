@@ -7,8 +7,7 @@ Contains methods for generating prime numbers.
 
 """
 from random import randint
-
-from cryptovote.utils import powmod
+from typing import Tuple
 
 
 def is_prime(p: int) -> bool:
@@ -16,8 +15,8 @@ def is_prime(p: int) -> bool:
 
     This should run enough iterations of the test to be reasonably confident that p is prime.
     """
-    for _ in range(100):
-        if powmod(2, p - 1, p) != 1:
+    for a in range(2, 10):
+        if pow(a, p - 1, p) != 1:
             return False
     return True
 
@@ -40,6 +39,16 @@ def gen_safe_prime(b: int) -> int:
                 return p
 
 
+def gen_safe_prime_pair(b: int) -> Tuple[int, int]:
+    """ Return a pair of safe primes with b bits."""
+    p = gen_safe_prime(b)
+    q = gen_safe_prime(b)
+    while p == q:
+        q = gen_safe_prime(b)
+
+    return p, q
+
+
 def get_order_in_safe_prime(x: int, p: int) -> int:
     """ Gets the order of x in Z_p^* where p = 2q + 1 is a safe prime.
 
@@ -48,15 +57,15 @@ def get_order_in_safe_prime(x: int, p: int) -> int:
     q = (p - 1) // 2
 
     # Order 1
-    if powmod(x, 1, p) == 1:
+    if pow(x, 1, p) == 1:
         return 1
 
     # Order q
-    if powmod(x, 2, p) == 1:
+    if pow(x, 2, p) == 1:
         return 2
 
     # Order q
-    if powmod(x, q, p) == 1:
+    if pow(x, q, p) == 1:
         return q
 
     # Order 2q
