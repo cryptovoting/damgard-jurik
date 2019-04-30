@@ -144,15 +144,29 @@ def damgard_jurik_reduce(a: int, s: int, n: int) -> int:
     return i
 
 
+def get_unique_private_key_shares(private_key_shares: List[PrivateKeyShare]) -> List[PrivateKeyShare]:
+    """ Returns a list of unique PrivateKeyShares (i.e. (i, f(i)) pairs with unique i)."""
+    i_set = set()
+    unique_private_key_shares = []
+    for pk in private_key_shares:
+        if pk.i not in i_set:
+            unique_private_key_shares.append(pk)
+            i_set.add(pk.i)
+
+    return unique_private_key_shares
+
+
 def threshold_decrypt(c: EncryptedNumber, private_key_shares: List[PrivateKeyShare]) -> int:
+    """ Performs threshold decryption using a list of PrivateKeyShares."""
+    # Extract values from PublicKey
     threshold, delta, s, n, n_s, n_s_1 = \
         c.public_key.threshold, c.public_key.delta, c.public_key.s, c.public_key.n, c.public_key.n_s, c.public_key.n_s_1
 
-    if not len(private_key_shares) == len({pk.i for pk in private_key_shares}):
-        raise ValueError('Found duplicate PrivateKeyShares')
+    # Get unique PrivateKeyShares
+    private_key_shares = get_unique_private_key_shares(private_key_shares)
 
     if not len(private_key_shares) >= threshold:
-        raise ValueError(f'Need at least {threshold} PrivateKeyShares to decrypt but only have {len(private_key_shares)}')
+        raise ValueError(f'Need at least {threshold} unique PrivateKeyShares to decrypt but only have {len(private_key_shares)}.')
 
     # Only need threshold PrivateKeyShares to decrypt
     private_key_shares = private_key_shares[:threshold]
@@ -170,7 +184,6 @@ def threshold_decrypt(c: EncryptedNumber, private_key_shares: List[PrivateKeySha
             assert l % (i - i_prime) == 0
             l = l // (i - i_prime)
         l = l * (-1 if len(S_prime) % 2 != 0 else 1) * pow(i, len(S_prime))
-
         return l
 
     # Decrypt
