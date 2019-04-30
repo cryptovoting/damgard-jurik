@@ -13,7 +13,7 @@ from typing import Any, List, Tuple
 
 from cryptovote.prime_gen import gen_safe_prime_pair
 from cryptovote.shamir import share_secret
-from cryptovote.utils import crm, inv_mod, pow_mod, prod
+from cryptovote.utils import crm, inv_mod, prod
 
 
 class EncryptedNumber:
@@ -42,7 +42,7 @@ class EncryptedNumber:
 
         return EncryptedNumber(
             public_key=self.public_key,
-            value=pow_mod(self.value, other, self.public_key.n_s_1)
+            value=pow(self.value, other, self.public_key.n_s_1)
         )
 
     def __rmul__(self, other: Any) -> 'EncryptedNumber':
@@ -64,7 +64,7 @@ class PublicKey:
     def encrypt(self, m: int) -> EncryptedNumber:
         # Choose random r in Z_n^*
         r = randbelow(self.n - 1) + 1
-        c = ((1 + self.n) ** m) * (r ** self.n_s) % self.n_s_1
+        c = pow(1 + self.n, m, self.n_s_1) * pow(r, self.n_s, self.n_s_1) % self.n_s_1
         c = EncryptedNumber(self, c)
 
         return c

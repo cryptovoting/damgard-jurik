@@ -9,16 +9,14 @@ Contains methods for generating prime numbers.
 from random import randint
 from typing import Tuple
 
-from cryptovote.utils import pow_mod
-
 
 def is_prime(p: int) -> bool:
     """ Returns whether p is probably prime.
 
     This should run enough iterations of the test to be reasonably confident that p is prime.
     """
-    for _ in range(100):
-        if pow_mod(2, p - 1, p) != 1:
+    for a in range(2, 10):
+        if pow(a, p - 1, p) != 1:
             return False
     return True
 
@@ -59,15 +57,15 @@ def get_order_in_safe_prime(x: int, p: int) -> int:
     q = (p - 1) // 2
 
     # Order 1
-    if pow_mod(x, 1, p) == 1:
+    if pow(x, 1, p) == 1:
         return 1
 
     # Order q
-    if pow_mod(x, 2, p) == 1:
+    if pow(x, 2, p) == 1:
         return 2
 
     # Order q
-    if pow_mod(x, q, p) == 1:
+    if pow(x, q, p) == 1:
         return q
 
     # Order 2q

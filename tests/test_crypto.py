@@ -10,9 +10,8 @@ import os
 import sys
 import unittest
 
-sys.path.append(os.path.dirname(os.path.dirname(__file__)))
-
 from cryptovote.crypto import keygen
+from cryptovote.damgard_jurik import keygen as keygen_dj, threshold_decrypt
 
 
 class TestCrypto(unittest.TestCase):
@@ -50,5 +49,20 @@ class TestCrypto(unittest.TestCase):
         self.assertEqual(plaintext * scalar, decrypted_plaintext)
 
 
+class TestDamgardJurik(unittest.TestCase):
+    def test_encrypt_decrypt(self):
+        public_key, private_key_shares = keygen_dj(n_bits=128, s=4, threshold=9, n_shares=16)
+
+
 if __name__ == '__main__':
-    unittest.main()
+    # unittest.main()
+    print('keygen')
+    public_key, private_key_shares = keygen_dj(n_bits=128, s=4, threshold=9, n_shares=16)
+
+    print('encrypt')
+    m = 1234
+    c = public_key.encrypt(m)
+    print(c.value)
+    print('decrypt')
+    m_prime = threshold_decrypt(c, private_key_shares)
+    print(m_prime)

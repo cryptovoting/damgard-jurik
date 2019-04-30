@@ -26,12 +26,20 @@ def lcm(a: int, b: int) -> int:
 
 
 def pow_mod(a: int, b: int, m: int) -> int:
-    """ Returns the power a**b % m. """
-    if b == 1:
-        return a % m
-    if b % 2 == 0:
-        return pow_mod(a ** 2 % m, b // 2, m) % m
-    return (a * pow_mod(a ** 2 % m, (b - 1) // 2, m)) % m
+    """ Returns the power a^b (mod m). """
+    assert m > 0
+
+    y = 1
+    while b > 1:
+        if b % 2 == 0:
+            b = b // 2
+        else:
+            y = y * a % m
+            b = (b - 1) // 2
+
+        a = a ** 2 % m
+
+    return a * y % m
 
 
 # https://en.wikibooks.org/wiki/Algorithm_Implementation/Mathematics/Extended_Euclidean_algorithm#Python
@@ -49,7 +57,7 @@ def extended_euclidean(a: int, b: int) -> Tuple[int, int]:
 def inv_mod(a: int, m: int) -> int:
     """ Finds the inverse of a modulo m."""
     # a and m must be coprime to find an inverse
-    if gcd(a, m) == 1:
+    if gcd(a, m) != 1:
         raise Exception(f'modular inverse does not exist since {a} and {m} are not coprime')
 
     x, _ = extended_euclidean(a, m)
