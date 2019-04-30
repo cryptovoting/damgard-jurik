@@ -8,7 +8,9 @@ Implementation of Shamir secret sharing.
 from secrets import randbelow
 from typing import List, Tuple
 
-from gmpy2 import mpq, mpz
+from gmpy2 import mpz
+
+from cryptovote.utils import inv_mod
 
 
 class Polynomial:
@@ -38,7 +40,6 @@ def share_secret(secret: int,
     assert n_shares >= threshold
 
     coeffs = [secret] + [randbelow(modulus) for _ in range(threshold - 1)]
-    print(coeffs)
     f = Polynomial(coeffs, modulus)
     X = [mpz(x) for x in range(1, n_shares + 1)]
     shares = [(x, f(x)) for x in X]
@@ -59,7 +60,7 @@ def reconstruct(shares: List[Tuple[int, int]],
         product = mpz(1)
         for j, (x_j, _) in enumerate(shares):
             if i != j:
-                product = product * mpq(-1 * x_j, x_i - x_j) % modulus
+                product = product * (mpz(-1) * x_j) * inv_mod(x_i - x_j, modulus) % modulus
         secret = (secret + f_x_i * product % modulus) % modulus
 
     return secret

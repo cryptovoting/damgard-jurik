@@ -48,7 +48,10 @@ def extended_euclidean(a: int, b: int) -> Tuple[int, int]:
 
 
 def inv_mod(a: int, m: int) -> int:
-    """ Finds the inverse of a modulo m."""
+    """ Finds the inverse of a modulo m (i.e. b s.t. a*b = 1 (mod m))."""
+    if a < 0:
+        a = m + a
+
     # a and m must be coprime to find an inverse
     if gcd(a, m) != 1:
         raise Exception(f'modular inverse does not exist since {a} and {m} are not coprime')
