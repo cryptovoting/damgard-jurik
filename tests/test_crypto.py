@@ -51,18 +51,25 @@ class TestCrypto(unittest.TestCase):
 
 class TestDamgardJurik(unittest.TestCase):
     def test_encrypt_decrypt(self):
-        public_key, private_key_shares = keygen_dj(n_bits=128, s=4, threshold=9, n_shares=16)
+        public_key, private_key_shares = keygen_dj(n_bits=32, s=1, threshold=1, n_shares=2)
 
 
 if __name__ == '__main__':
     # unittest.main()
     print('keygen')
-    public_key, private_key_shares = keygen_dj(n_bits=128, s=4, threshold=9, n_shares=16)
+    public_key, private_key_shares = keygen_dj(n_bits=32, s=2, threshold=2, n_shares=4)
+    print()
+
+    print('message')
+    m = 1234
+    print(m)
+    print()
 
     print('encrypt')
-    m = 1234
     c = public_key.encrypt(m)
     print(c.value)
+    print()
+
     print('decrypt')
     m_prime = threshold_decrypt(c, private_key_shares)
     print(m_prime)

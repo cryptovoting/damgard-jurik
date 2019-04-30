@@ -13,7 +13,7 @@ from typing import Any, List, Tuple
 
 from cryptovote.prime_gen import gen_safe_prime_pair
 from cryptovote.shamir import share_secret
-from cryptovote.utils import crm, inv_mod, prod
+from cryptovote.utils import crm, inv_mod, pow_mod
 
 
 class EncryptedNumber:
@@ -71,13 +71,14 @@ class PublicKey:
 
 
 class PrivateKeyShare:
-    def __init__(self, i: int, s_i: int, delta: int):
+    def __init__(self, public_key: PublicKey, i: int, s_i: int, delta: int):
+        self.public_key = public_key
         self.i = i
         self.s_i = s_i
         self.delta = delta
 
     def decrypt(self, c: EncryptedNumber) -> int:
-        c_i = c.value ** (2 * self.delta * self.s_i)
+        c_i = pow(c.value, 2 * self.delta * self.s_i, self.public_key.n_s_1)
 
         return c_i
 
@@ -110,7 +111,7 @@ def keygen(n_bits: int = 2048,
     # Create PublicKey and PrivateKeyShares
     delta = factorial(n_shares)
     public_key = PublicKey(n=n, s=s, threshold=threshold, delta=delta)
-    private_key_shares = [PrivateKeyShare(i=i, s_i=s_i, delta=delta) for i, s_i in shares]
+    private_key_shares = [PrivateKeyShare(public_key=public_key, i=i, s_i=s_i, delta=delta) for i, s_i in shares]
 
     return public_key, private_key_shares
 
@@ -136,7 +137,7 @@ def damgard_jurik_reduce(a: int, s: int, n: int) -> int:
         for k in range(2, j):
             i = i - 1
             t_2 = t_2 * i % n_pow(j)
-            t_1 = t_1 - (t_2 * n_pow(k - 1) / fact(k)) % n_pow(j)
+            t_1 = t_1 - (t_2 * n_pow(k - 1) // fact(k)) % n_pow(j)
 
         i = t_1
 
@@ -144,7 +145,8 @@ def damgard_jurik_reduce(a: int, s: int, n: int) -> int:
 
 
 def threshold_decrypt(c: EncryptedNumber, private_key_shares: List[PrivateKeyShare]) -> int:
-    threshold, delta, s, n, n_s = c.public_key.threshold, c.public_key.delta, c.public_key.s, c.public_key.n, c.public_key.n_s
+    threshold, delta, s, n, n_s, n_s_1 = \
+        c.public_key.threshold, c.public_key.delta, c.public_key.s, c.public_key.n, c.public_key.n_s, c.public_key.n_s_1
 
     if not len(private_key_shares) == len({pk.i for pk in private_key_shares}):
         raise ValueError('Found duplicate PrivateKeyShares')
@@ -162,10 +164,20 @@ def threshold_decrypt(c: EncryptedNumber, private_key_shares: List[PrivateKeySha
 
     # Define lambda function
     def lam(i: int) -> int:
-        return delta * prod([-i / (i - i_prime) for i_prime in S - {i}])
+        S_prime = S - {i}
+        l = delta
+        for i_prime in S - {i}:
+            assert l % (i - i_prime) == 0
+            l = l // (i - i_prime)
+        l = l * (-1 if len(S_prime) % 2 != 0 else 1) * pow(i, len(S_prime))
+
+        return l
 
     # Decrypt
-    c_prime = prod([c_i ** (2 * lam(i)) for c_i, i in zip(c_list, i_list)])
+    c_prime = 1
+    for c_i, i in zip(c_list, i_list):
+        c_prime = c_prime * pow_mod(c_i, (2 * lam(i)), n_s_1) % n_s_1
+
     m = damgard_jurik_reduce(c_prime, s, n) * inv_mod(4 * (delta ** 2), n_s)
 
     return m

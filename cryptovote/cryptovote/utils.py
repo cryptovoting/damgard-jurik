@@ -12,6 +12,7 @@ from typing import List, Tuple
 
 
 def prod(nums: List[int]) -> int:
+    """ Returns nums[0] * num[1] * ..."""
     return reduce(mul, nums)
 
 
@@ -26,20 +27,12 @@ def lcm(a: int, b: int) -> int:
 
 
 def pow_mod(a: int, b: int, m: int) -> int:
-    """ Returns the power a^b (mod m). """
-    assert m > 0
+    """ Computes a^b (mod m)."""
+    if b < 0:
+        a = inv_mod(a, m)
+        b = -b
 
-    y = 1
-    while b > 1:
-        if b % 2 == 0:
-            b = b // 2
-        else:
-            y = y * a % m
-            b = (b - 1) // 2
-
-        a = a ** 2 % m
-
-    return a * y % m
+    return pow(a, b, m)
 
 
 # https://en.wikibooks.org/wiki/Algorithm_Implementation/Mathematics/Extended_Euclidean_algorithm#Python
