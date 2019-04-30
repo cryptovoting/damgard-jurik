@@ -62,34 +62,34 @@ class TestShamir(unittest.TestCase):
         self.assertEqual(poly(1), sum(coeffs) % modulus)
         self.assertEqual(poly(5), sum([c_i * (5 ** i) for i, c_i in enumerate(coeffs)]) % modulus)
 
-    def test_reconstruct(self):
-        secret = 17
-        coeffs = [secret, 2, 3, 4, 5]
-        modulus = 23
-        poly = Polynomial(coeffs, modulus)
-        threshold = len(coeffs)
-
-        shares = [(x, poly(x)) for x in range(threshold)]
-
-        secret_prime = reconstruct(shares, threshold)
-
-        self.assertEqual(secret, secret_prime)
-
-    def test_reconstruct2(self):
-        print(reconstruct([(1, 8), (2, 4), (3, 0), (4, 9)], threshold=4))
-
+    # def test_reconstruct(self):
+    #     for _ in range(10):
+    #         modulus = gen_prime(b=32)
+    #         secret = randbelow(modulus)
+    #         coeffs = [secret] + [randbelow(modulus) for _ in range(randbelow(10) + 1)]
+    #         poly = Polynomial(coeffs, modulus)
+    #         threshold = len(coeffs)
+    #
+    #         shares = [(x, poly(x)) for x in range(1, threshold + randbelow(10))]
+    #
+    #         secret_prime = reconstruct(shares, modulus)
+    #         print(coeffs)
+    #
+    #         self.assertEqual(secret, secret_prime)
+    # #
     def test_shamir(self):
         for _ in range(10):
-            modulus = gen_prime(b=4)
+            modulus = gen_prime(b=32)
+            print(modulus)
             secret = randbelow(modulus)
-            n_shares = 4
-            threshold = 2
+            n_shares = 5
+            threshold = 4
             # n_shares = randbelow(4) + 1
             # threshold = randbelow(n_shares) + 1
 
             shares = share_secret(secret, modulus, threshold, n_shares)
             print(shares)
-            secret_prime = reconstruct(shares, threshold)
+            secret_prime = reconstruct(shares, modulus)
 
             print(secret)
             print(secret_prime)

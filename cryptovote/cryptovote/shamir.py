@@ -8,17 +8,20 @@ Implementation of Shamir secret sharing.
 from secrets import randbelow
 from typing import List, Tuple
 
+from gmpy2 import mpq, mpz
+
 
 class Polynomial:
     def __init__(self, coeffs: List[int], modulus: int):
-        self.coeffs = coeffs
-        self.modulus = modulus
+        self.coeffs = [mpz(c_i) for c_i in coeffs]
+        self.modulus = mpz(modulus)
 
-    def __call__(self, x: int):
-        f_x = 0
-        for i, a_i in enumerate(self.coeffs):
-            f_x += a_i * pow(x, i, self.modulus) % self.modulus
-            f_x = f_x % self.modulus
+    def __call__(self, x: int) -> int:
+        x = mpz(x)
+        f_x = mpz(0)
+
+        for i, c_i in enumerate(self.coeffs):
+            f_x = (f_x + c_i * pow(x, i, self.modulus) % self.modulus) % self.modulus
 
         return f_x
 
@@ -35,40 +38,28 @@ def share_secret(secret: int,
     assert n_shares >= threshold
 
     coeffs = [secret] + [randbelow(modulus) for _ in range(threshold - 1)]
+    print(coeffs)
     f = Polynomial(coeffs, modulus)
-    shares = [(x, f(x)) for x in range(1, n_shares + 1)]
+    X = [mpz(x) for x in range(1, n_shares + 1)]
+    shares = [(x, f(x)) for x in X]
 
     return shares
 
 
-def get_unique_shares(shares: List[Tuple[int, int]]) -> List[Tuple[int, int]]:
-    """ Returns a list of unique shares (i.e. (x, f(x)) pairs with unique x)."""
-    i_set = set()
-    unique_shares = []
-    for share in shares:
-        i = share[0]
-
-        if i not in i_set:
-            unique_shares.append(share)
-            i_set.add(i)
-
-    return unique_shares
-
-
 def reconstruct(shares: List[Tuple[int, int]],
-                threshold: int) -> int:
+                modulus: int) -> int:
     """ Reconstructs a secret from shares."""
-    shares = get_unique_shares(shares)
+    # Convert to mpz
+    shares = [(mpz(x), mpz(f_x)) for x, f_x in shares]
+    modulus = mpz(modulus)
 
-    if not len(shares) >= threshold:
-        raise ValueError(f'Need at least {threshold} unique PrivateKeyShares to decrypt but only have {len(shares)}.')
-
-    secret = 0
+    # Reconstruct secret
+    secret = mpz(0)
     for i, (x_i, f_x_i) in enumerate(shares):
-        product = 1
+        product = mpz(1)
         for j, (x_j, _) in enumerate(shares):
             if i != j:
-                product = product * (-1 * x_j) / (x_i - x_j)
-        secret += f_x_i * product
+                product = product * mpq(-1 * x_j, x_i - x_j) % modulus
+        secret = (secret + f_x_i * product % modulus) % modulus
 
     return secret
