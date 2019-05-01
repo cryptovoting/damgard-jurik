@@ -98,22 +98,22 @@ class TestShamir(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    unittest.main()
-    #
-    # print('keygen')
-    # public_key, private_key_shares = keygen_dj(n_bits=32, s=1, threshold=1, n_shares=2)
-    # print()
-    #
-    # print('message')
-    # m = 1234
-    # print(m)
-    # print()
-    #
-    # print('encrypt')
-    # c = public_key.encrypt(m)
-    # print(c.value)
-    # print()
-    #
-    # print('decrypt')
-    # m_prime = threshold_decrypt(c, private_key_shares)
-    # print(m_prime)
+    # unittest.main()
+
+    print('keygen')
+    public_key, private_key_shares = keygen_dj(n_bits=32, s=5, threshold=3, n_shares=5)
+    print()
+
+    print('message')
+    m = 1234
+    print(m)
+    print()
+
+    print('encrypt')
+    c = public_key.encrypt(m)
+    print(c.value)
+    print()
+
+    print('decrypt')
+    m_prime = threshold_decrypt(c, private_key_shares)
+    print(m_prime)

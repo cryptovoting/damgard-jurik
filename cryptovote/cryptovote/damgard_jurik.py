@@ -59,11 +59,13 @@ class EncryptedNumber:
 
 
 class PublicKey:
-    def __init__(self, n: int, s: int, threshold: int, delta: int):
+    def __init__(self, n: int, s: int, m: int, threshold: int, delta: int):
         self.n = n
         self.s = s
+        self.m = m
         self.n_s = self.n ** self.s  # n^s
         self.n_s_1 = self.n_s * self.n  # n^(s+1)
+        self.n_s_m = self.n_s * m  # n^s * m
         self.threshold = threshold
         self.delta = delta
 
@@ -106,6 +108,9 @@ def keygen(n_bits: int = 2048,
 
     # Find d such that d = 0 mod m and d = 1 mod n^s
     d = crm(a_list=[0, 1], n_list=[m, n_s])
+    # TODO: should it be mod m or mod lambda = lcm(p-1,q-1)
+    # from cryptovote.utils import lcm
+    # d = crm(a_list=[0, 1], n_list=[lcm(p - 1, q - 1), n_s])
 
     # Use Shamir secret sharing to share_secret d
     shares = share_secret(
@@ -117,7 +122,7 @@ def keygen(n_bits: int = 2048,
 
     # Create PublicKey and PrivateKeyShares
     delta = factorial(n_shares)
-    public_key = PublicKey(n=n, s=s, threshold=threshold, delta=delta)
+    public_key = PublicKey(n=n, s=s, m=m, threshold=threshold, delta=delta)
     private_key_shares = [PrivateKeyShare(public_key=public_key, i=i, s_i=s_i, delta=delta) for i, s_i in shares]
 
     return public_key, private_key_shares
@@ -126,6 +131,7 @@ def keygen(n_bits: int = 2048,
 def damgard_jurik_reduce(a: int, s: int, n: int) -> int:
     """ Computes i given a = (1 + n)^i (mod n^(s+1))."""
     def L(b: int) -> int:
+        assert (b - 1) % n == 0
         return (b - 1) // n
 
     @lru_cache(s)
@@ -137,14 +143,14 @@ def damgard_jurik_reduce(a: int, s: int, n: int) -> int:
         return factorial(k)
 
     i = 0
-    for j in range(1, s):
+    for j in range(1, s + 1):
         t_1 = L(a % n_pow(j + 1))
         t_2 = i
 
-        for k in range(2, j):
+        for k in range(2, j + 1):
             i = i - 1
             t_2 = t_2 * i % n_pow(j)
-            t_1 = t_1 - (t_2 * n_pow(k - 1) // fact(k)) % n_pow(j)
+            t_1 = t_1 - (t_2 * n_pow(k - 1) * inv_mod(fact(k), n_pow(j))) % n_pow(j)
 
         i = t_1
 
@@ -166,8 +172,8 @@ def get_unique_private_key_shares(private_key_shares: List[PrivateKeyShare]) -> 
 def threshold_decrypt(c: EncryptedNumber, private_key_shares: List[PrivateKeyShare]) -> int:
     """ Performs threshold decryption using a list of PrivateKeyShares."""
     # Extract values from PublicKey
-    threshold, delta, s, n, n_s, n_s_1 = \
-        c.public_key.threshold, c.public_key.delta, c.public_key.s, c.public_key.n, c.public_key.n_s, c.public_key.n_s_1
+    threshold, delta, s, n, n_s, n_s_1, n_s_m = \
+        c.public_key.threshold, c.public_key.delta, c.public_key.s, c.public_key.n, c.public_key.n_s, c.public_key.n_s_1, c.public_key.n_s_m
 
     # Get unique PrivateKeyShares
     private_key_shares = get_unique_private_key_shares(private_key_shares)
@@ -186,11 +192,9 @@ def threshold_decrypt(c: EncryptedNumber, private_key_shares: List[PrivateKeySha
     # Define lambda function
     def lam(i: int) -> int:
         S_prime = S - {i}
-        l = delta
+        l = delta % n_s_m
         for i_prime in S_prime:
-            assert l % (i - i_prime) == 0
-            l = l // (i - i_prime)
-        l = l * (-1 if len(S_prime) % 2 != 0 else 1) * pow(i, len(S_prime))
+            l = l * i_prime * inv_mod(i_prime - i, n_s_m) % n_s_m
         return l
 
     # Decrypt
@@ -198,6 +202,6 @@ def threshold_decrypt(c: EncryptedNumber, private_key_shares: List[PrivateKeySha
     for c_i, i in zip(c_list, i_list):
         c_prime = c_prime * pow_mod(c_i, (2 * lam(i)), n_s_1) % n_s_1
 
-    m = damgard_jurik_reduce(c_prime, s, n) * inv_mod(4 * (delta ** 2), n_s)
+    m = damgard_jurik_reduce(c_prime, s, n) * inv_mod(4 * (delta ** 2), n_s) % n_s
 
     return m
