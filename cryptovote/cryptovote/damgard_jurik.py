@@ -119,7 +119,8 @@ def keygen(n_bits: int = 2048,
 def damgard_jurik_reduce(a: int, s: int, n: int) -> int:
     """ Computes i given a = (1 + n)^i (mod n^(s+1))."""
     def L(b: int) -> int:
-        return (b - 1) // n
+        assert((b-1)%n == 0)
+        return (b - 1)//n
 
     @lru_cache(s)
     def n_pow(p: int) -> int:
@@ -130,14 +131,15 @@ def damgard_jurik_reduce(a: int, s: int, n: int) -> int:
         return factorial(k)
 
     i = 0
-    for j in range(1, s):
+    for j in range(1, s+1):
         t_1 = L(a % n_pow(j + 1))
         t_2 = i
 
-        for k in range(2, j):
+        for k in range(2, j+1):
             i = i - 1
             t_2 = t_2 * i % n_pow(j)
-            t_1 = t_1 - (t_2 * n_pow(k - 1) // fact(k)) % n_pow(j)
+            #assert(t_2*n_pow(k-1)%fact(k) == 0)
+            t_1 = (t_1 - (t_2 * n_pow(k - 1) * inv_mod(fact(k), n_pow(j))))% n_pow(j)
 
         i = t_1
 
@@ -176,21 +178,30 @@ def threshold_decrypt(c: EncryptedNumber, private_key_shares: List[PrivateKeySha
     c_list = [pk.decrypt(c) for pk in private_key_shares]
     i_list = [pk.i for pk in private_key_shares]
 
+    print("c_list", c_list)
+
     # Define lambda function
     def lam(i: int) -> int:
         S_prime = S - {i}
         l = delta
+        print("Finding lambda for", i)
         for i_prime in S - {i}:
             assert l % (i - i_prime) == 0
             l = l // (i - i_prime)
         l = l * (-1 if len(S_prime) % 2 != 0 else 1) * pow(i, len(S_prime))
+        print("which is", l)
         return l
 
     # Decrypt
     c_prime = 1
     for c_i, i in zip(c_list, i_list):
-        c_prime = c_prime * pow_mod(c_i, (2 * lam(i)), n_s_1) % n_s_1
+        c_prime = (c_prime * pow_mod(c_i, (2 * lam(i)), n_s_1)) % n_s_1
+    
+    print("c_prime", c_prime)
 
-    m = damgard_jurik_reduce(c_prime, s, n) * inv_mod(4 * (delta ** 2), n_s)
+    print("n_s", n_s)
+    print("n_s_1", n_s_1)
+
+    m = (damgard_jurik_reduce(c_prime, s, n) * inv_mod(4 * (delta ** 2), n_s_1))%n_s_1
 
     return m
