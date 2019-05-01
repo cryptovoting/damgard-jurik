@@ -92,28 +92,23 @@ class TestShamir(unittest.TestCase):
 
             self.assertEqual(secret, secret_prime)
 
-# class TestDamgardJurik(unittest.TestCase):
-#     def test_encrypt_decrypt(self):
-#         public_key, private_key_shares = keygen_dj(n_bits=32, s=1, threshold=1, n_shares=2)
+class TestDamgardJurik(unittest.TestCase):
+     def test_damgard_jurik(self):
+         for _ in trange(10):
+             n_bits = randbelow(32) + 16
+             s = randbelow(5) + 1
+             threshold = randbelow(10) + 1
+             n_shares = 2 * threshold + randbelow(10)
+
+             public_key, private_key_shares = keygen_dj(n_bits=32, s=1, threshold=1, n_shares=2)
+
+             m = randbelow(public_key.n_s)
+
+             c = public_key.encrypt(m)
+             m_prime = threshold_decrypt(c, private_key_shares)
+
+             self.assertEqual(m, m_prime)
 
 
 if __name__ == '__main__':
-    # unittest.main()
-
-    print('keygen')
-    public_key, private_key_shares = keygen_dj(n_bits=32, s=5, threshold=3, n_shares=5)
-    print()
-
-    print('message')
-    m = 1234
-    print(m)
-    print()
-
-    print('encrypt')
-    c = public_key.encrypt(m)
-    print(c.value)
-    print()
-
-    print('decrypt')
-    m_prime = threshold_decrypt(c, private_key_shares)
-    print(m_prime)
+    unittest.main()

@@ -200,8 +200,8 @@ def threshold_decrypt(c: EncryptedNumber, private_key_shares: List[PrivateKeySha
     # Decrypt
     c_prime = 1
     for c_i, i in zip(c_list, i_list):
-        c_prime = c_prime * pow_mod(c_i, (2 * lam(i)), n_s_1) % n_s_1
-
+        c_prime = (c_prime * pow_mod(c_i, (2 * lam(i)), n_s_1)) % n_s_1
+    
     m = damgard_jurik_reduce(c_prime, s, n) * inv_mod(4 * (delta ** 2), n_s) % n_s
 
     return m
