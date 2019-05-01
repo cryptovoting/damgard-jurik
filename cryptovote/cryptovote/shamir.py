@@ -60,7 +60,7 @@ def reconstruct(shares: List[Tuple[int, int]],
         product = mpz(1)
         for j, (x_j, _) in enumerate(shares):
             if i != j:
-                product = product * (mpz(-1) * x_j) * inv_mod(x_i - x_j, modulus) % modulus
+                product = product * x_j * inv_mod(x_j - x_i, modulus) % modulus
         secret = (secret + f_x_i * product % modulus) % modulus
 
     return secret

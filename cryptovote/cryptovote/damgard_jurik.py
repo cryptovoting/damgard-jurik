@@ -48,6 +48,12 @@ class EncryptedNumber:
     def __rmul__(self, other: Any) -> 'EncryptedNumber':
         return self.__mul__(other)
 
+    def __truediv__(self, other: Any):
+        if not isinstance(other, int):
+            raise ValueError('Can only divide an EncryptedNumber by an int')
+
+        return self * inv_mod(other, self.public_key.n_s_1)
+
     def __eq__(self, other):
         return self.value == other.value
 
@@ -64,7 +70,7 @@ class PublicKey:
     def encrypt(self, m: int) -> EncryptedNumber:
         # Choose random r in Z_n^*
         r = randbelow(self.n - 1) + 1
-        c = pow(1 + self.n, m, self.n_s_1) * pow(r, self.n_s, self.n_s_1) % self.n_s_1
+        c = pow(self.n + 1, m, self.n_s_1) * pow(r, self.n_s, self.n_s_1) % self.n_s_1
         c = EncryptedNumber(self, c)
 
         return c
@@ -76,9 +82,10 @@ class PrivateKeyShare:
         self.i = i
         self.s_i = s_i
         self.delta = delta
+        self.two_delta_s_i = 2 * self.delta * self.s_i
 
     def decrypt(self, c: EncryptedNumber) -> int:
-        c_i = pow(c.value, 2 * self.delta * self.s_i, self.public_key.n_s_1)
+        c_i = pow(c.value, self.two_delta_s_i, self.public_key.n_s_1)
 
         return c_i
 
@@ -180,7 +187,7 @@ def threshold_decrypt(c: EncryptedNumber, private_key_shares: List[PrivateKeySha
     def lam(i: int) -> int:
         S_prime = S - {i}
         l = delta
-        for i_prime in S - {i}:
+        for i_prime in S_prime:
             assert l % (i - i_prime) == 0
             l = l // (i - i_prime)
         l = l * (-1 if len(S_prime) % 2 != 0 else 1) * pow(i, len(S_prime))

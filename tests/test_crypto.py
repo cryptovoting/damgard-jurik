@@ -101,7 +101,7 @@ if __name__ == '__main__':
     unittest.main()
     #
     # print('keygen')
-    # public_key, private_key_shares = keygen_dj(n_bits=32, s=2, threshold=2, n_shares=4)
+    # public_key, private_key_shares = keygen_dj(n_bits=32, s=1, threshold=1, n_shares=2)
     # print()
     #
     # print('message')
