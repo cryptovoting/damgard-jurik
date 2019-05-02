@@ -98,11 +98,12 @@ class CandidateOrderBallot(Ballot):
         # Step 6: Encrypt the preference row
         preferences = [public_key.encrypt(preference) for preference in preferences]
         # Step 7: Shuffle the table columns
-        candidates, weights = self.shuffle(candidates, weights)
+        candidates, preferences, weights = self.shuffle(candidates, preferences, weights)
         # Step 8: Threshold decrypt the candidate row
         candidates = [private_key.decrypt(candidate) for candidate in candidates]
         # Step 9: Sort columns in candidate order
         tmp = [(candidates[i], preferences[i], weights[i]) for i in range(n)]
+        tmp.sort()
         candidates = [tmp[i][0] for i in range(n)]
         preferences = [tmp[i][1] for i in range(n)]
         weights = [tmp[i][2] for i in range(n)]

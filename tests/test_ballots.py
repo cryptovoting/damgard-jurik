@@ -33,24 +33,46 @@ class TestBallots(unittest.TestCase):
 
 
 class TestCandidateOrderBallot(unittest.TestCase):
-    def test_toFirstPrefBallot(self):
+    def test_toFirstPreferenceBallot_01(self):
+        public_key, private_key = generate_paillier_keypair()
+
+        candidates = [1, 2, 3]
+        preferences = [3, 1, 2]
+        weight = 1.0
+        first_preferences = [0, weight, 0]
+
+        ballot = CandidateOrderBallot(candidates[:], [public_key.encrypt(pref) for pref in preferences], public_key.encrypt(weight))
+
+        result = ballot.to_first_preference(private_key, public_key)
+
+        self.assertIsInstance(result, FirstPreferenceBallot, "The returned ballot must be of type FirstPreferenceBallot")
+
+        self.assertListEqual(result.candidates, candidates, "The candidates list must match")
+
+        self.assertListEqual([private_key.decrypt(preference) for preference in result.preferences], preferences, "The preferences list must match")
+
+        self.assertListEqual([private_key.decrypt(weight) for weight in result.weights], first_preferences, "The weights list must match")
+
+    def test_toFirstPreferenceBallot_02(self):
         public_key, private_key = generate_paillier_keypair()
 
         candidates = [0, 1, 2, 3, 4, 5]
-        weight = 0.8
         preferences = [1, 5, 0, 2, 4, 3]
+        weight = 0.8
         first_preferences = [0, 0, weight, 0, 0, 0]
-        ballot1 = CandidateOrderBallot(candidates, [public_key.encrypt(pref) for pref in preferences],
+
+        ballot = CandidateOrderBallot(candidates, [public_key.encrypt(pref) for pref in preferences],
                                        public_key.encrypt(weight))
 
-        result = ballot1.to_first_preference(private_key, public_key)
-        self.assertIsInstance(result, FirstPreferenceBallot,
-                              "The returned ballot must be of type FirstPreferenceBallot")
+        result = ballot.to_first_preference(private_key, public_key)
 
-        self.assertListEqual(result.candidates, candidates, "The candidates lists must match")
-        self.assertListEqual([private_key.decrypt(w) for w in result.weights], first_preferences,
-                             "The weights lists must match")
+        self.assertIsInstance(result, FirstPreferenceBallot, "The returned ballot must be of type FirstPreferenceBallot")
 
+        self.assertListEqual(result.candidates, candidates, "The candidates list must match")
+
+        self.assertListEqual([private_key.decrypt(preference) for preference in result.preferences], preferences, "The preferences list must match")
+
+        self.assertListEqual([private_key.decrypt(weight) for weight in result.weights], first_preferences, "The weights list must match")
 
 if __name__ == '__main__':
     unittest.main(verbosity=3)
