@@ -6,7 +6,7 @@
 
 Requires Python 3.6+.
 
-```
+```bash
 git clone https://github.com/swansonk14/crypto-voting.git
 cd crypto-voting
 pip install -e cryptovote
@@ -15,5 +15,18 @@ pip install -e cryptovote
 
 All requirements for this package should be added to `setup.py`.
 
+## Web Interface
 
-[Shuffle sum paper](https://talmoran.net/papers/BMNRT09-shuffle-sum.pdf?fbclid=IwAR0jZ18H2ZYMsCjPkW-3ohDNom5UjbK-jMen6_lISVoWJJnPWM0A41KAS1Y)
+To run an election via the web interface, run the following commands:
+
+```bash
+cd cryptovote-web
+pip install -r requirements.txt
+python -m flask run
+```
+
+Prior to initially running the web interface, the file `.env.example` should be copied into a new file named `.env` with the desired values set.
+
+## Acknowledgements
+
+This package is an implementation of the ShuffleSum algorithm proposed [in this paper](https://talmoran.net/papers/BMNRT09-shuffle-sum.pdf?fbclid=IwAR0jZ18H2ZYMsCjPkW-3ohDNom5UjbK-jMen6_lISVoWJJnPWM0A41KAS1Y)
