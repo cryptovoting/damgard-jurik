@@ -93,14 +93,14 @@ class TestShamir(unittest.TestCase):
             self.assertEqual(secret, secret_prime)
 
 class TestDamgardJurik(unittest.TestCase):
-     def test_damgard_jurik(self):
+     def test_encrypt_decrypt(self):
          for _ in trange(10):
              n_bits = randbelow(32) + 16
              s = randbelow(5) + 1
              threshold = randbelow(10) + 1
              n_shares = 2 * threshold + randbelow(10)
 
-             public_key, private_key_shares = keygen_dj(n_bits=32, s=1, threshold=1, n_shares=2)
+             public_key, private_key_shares = keygen_dj(n_bits=n_bits, s=s, threshold=threshold, n_shares=n_shares)
 
              m = randbelow(public_key.n_s)
 
@@ -108,6 +108,47 @@ class TestDamgardJurik(unittest.TestCase):
              m_prime = threshold_decrypt(c, private_key_shares)
 
              self.assertEqual(m, m_prime)
+
+class TestDamgardJurikHomomorphic(unittest.TestCase):
+    def setUp(self):
+        self.public_key, self.private_key_shares = keygen_dj(n_bits=32, s=3, threshold=4, n_shares=10)
+
+    def test_homomorphic_add(self):
+        for _ in trange(10):
+            plaintext_1, plaintext_2 = randbelow(100), randbelow(100)
+
+            ciphertext_1, ciphertext_2 = self.public_key.encrypt(plaintext_1), self.public_key.encrypt(plaintext_2)
+            ciphertext = ciphertext_1 + ciphertext_2
+            decrypted_plaintext = threshold_decrypt(ciphertext, self.private_key_shares)
+
+            self.assertNotEqual(plaintext_1, ciphertext_1.value)
+            self.assertNotEqual(plaintext_2, ciphertext_2.value)
+            self.assertEqual(plaintext_1 + plaintext_2, decrypted_plaintext)
+
+    def test_homomorphic_multiply(self):
+        for _ in trange(10):
+            plaintext = randbelow(100)
+            scalar = randbelow(100)
+
+            ciphertext = self.public_key.encrypt(plaintext)
+            ciphertext = ciphertext * scalar
+            decrypted_plaintext = threshold_decrypt(ciphertext, self.private_key_shares)
+
+            self.assertNotEqual(plaintext, ciphertext.value)
+            self.assertEqual(plaintext * scalar, decrypted_plaintext)
+
+    def test_homomorphic_divide(self):
+        for _ in trange(10):
+            scalar = randbelow(100) + 1
+            multiple = randbelow(100) + 1
+            plaintext = scalar * multiple
+
+            ciphertext = self.public_key.encrypt(plaintext)
+            ciphertext = ciphertext / scalar
+            decrypted_plaintext = threshold_decrypt(ciphertext, self.private_key_shares)
+
+            self.assertNotEqual(plaintext, ciphertext.value)
+            self.assertEqual(plaintext // scalar, decrypted_plaintext)
 
 
 if __name__ == '__main__':
