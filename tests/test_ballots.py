@@ -1,6 +1,6 @@
 import unittest
 
-from cryptovote.ballots import Ballot, CandidateOrderBallot, FirstPreferenceBallot
+from cryptovote.ballots import Ballot, CandidateOrderBallot, FirstPreferenceBallot, CandidateEliminationBallot
 from cryptovote.crypto import generate_paillier_keypair
 
 
@@ -61,7 +61,7 @@ class TestCandidateOrderBallot(unittest.TestCase):
         weight = 0.8
         first_preferences = [0, 0, weight, 0, 0, 0]
 
-        ballot = CandidateOrderBallot(candidates, [public_key.encrypt(pref) for pref in preferences],
+        ballot = CandidateOrderBallot(candidates[:], [public_key.encrypt(pref) for pref in preferences],
                                        public_key.encrypt(weight))
 
         result = ballot.to_first_preference(private_key, public_key)
@@ -73,6 +73,30 @@ class TestCandidateOrderBallot(unittest.TestCase):
         self.assertListEqual([private_key.decrypt(preference) for preference in result.preferences], preferences, "The preferences list must match")
 
         self.assertListEqual([private_key.decrypt(weight) for weight in result.weights], first_preferences, "The weights list must match")
+
+    def test_toCandidateElimination_01(self):
+        public_key, private_key = generate_paillier_keypair()
+
+        candidates = [1, 2, 3]
+        preferences = [3, 1, 2]
+        weight = 1.0
+        eliminated = [0, 0, 1]
+        post_eliminated = [0, 1, 0]
+
+        
+        ballot = CandidateOrderBallot(candidates[:], [public_key.encrypt(pref) for pref in preferences],
+                                       public_key.encrypt(weight))
+
+        result = ballot.to_candidate_elimination(eliminated, private_key, public_key)
+
+        self.assertIsInstance(result, CandidateEliminationBallot, "The returned ballot must be of type CandidateEliminationBallot")
+
+        self.assertListEqual([private_key.decrypt(preference) for preference in result.preferences], sorted(preferences), "The preferences list must match")
+
+        self.assertListEqual([private_key.decrypt(eliminated_i) for eliminated_i in result.eliminated], post_eliminated, "The eliminated list must match")
+
+        self.assertEqual(private_key.decrypt(result.weight), weight, "The weight must match")
+
 
 if __name__ == '__main__':
     unittest.main(verbosity=3)
