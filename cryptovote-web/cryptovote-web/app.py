@@ -1,6 +1,7 @@
 import os
 
 from flask import Flask, render_template
+from flask_migrate import Migrate
 from . import settings, controllers, models
 from .extensions import db
 
@@ -20,10 +21,16 @@ def create_app(config_object=settings):
 
 def register_extensions(app):
     """Register Flask extensions."""
+    # Initialize databse
     db.init_app(app)
 
+    # Create any database tables that don't exist
     with app.app_context():
         db.create_all()
+
+    # Add support for database migrations
+    Migrate(app, db)
+
     return None
 
 
