@@ -1,0 +1,27 @@
+{% extends "layouts/layout.html" %}
+
+{% block header %}
+<title>Cryptovote | Create Election</title>
+{% endblock %}
+
+{% block content %}
+<main class="page contact-page">
+    <section class="portfolio-block contact">
+        <div class="container">
+            <div class="heading">
+                <h1>Let's Create an Election</h1>
+            </div>
+            <form>
+                <div class="text-center mb-4" style="font-size:3em;">2</div>
+                <div class="form-group text-center">
+                  <label for="name"><h3>Verify Email</h3></label>
+                  <input class="form-control item" type="text" id="name" placeholder="Your Email Address">
+                </div>
+                <div class="form-group" style="margin-top: 50px;">
+                  <a href="{{ url_for('create_election.verify_phone') }}" class="btn btn-primary btn-block btn-lg" style="background-color: #0084da;">Next</a>
+                </div>
+            </form>
+        </div>
+    </section>
+</main>
+{% endblock %}
