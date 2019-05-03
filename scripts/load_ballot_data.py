@@ -4,8 +4,8 @@ from collections import defaultdict
 
 def load_ballot_data(master_lookup_path: str, ballot_image_path: str):
     # Load candidates from master lookup
+    contest_id_to_candidate_ids = defaultdict(set)
     candidate_id_to_candidate_name = {}
-    candidate_id_to_contest_id = {}
     contest_id_to_contest_name = {}
 
     with open(master_lookup_path) as f:
@@ -15,8 +15,8 @@ def load_ballot_data(master_lookup_path: str, ballot_image_path: str):
                 candidate_name = line[17:67].strip()
                 contest_id = int(line[74:81])
 
+                contest_id_to_candidate_ids[contest_id].add(candidate_id)
                 candidate_id_to_candidate_name[candidate_id] = candidate_name
-                candidate_id_to_contest_id[candidate_id] = contest_id
 
             elif line.startswith('Contest'):
                 contest_id = int(line[10:17])
@@ -24,16 +24,15 @@ def load_ballot_data(master_lookup_path: str, ballot_image_path: str):
 
                 contest_id_to_contest_name[contest_id] = contest_name
 
-    # Map each contest_id to a set of all candidate_ids in the contest
-    contest_id_to_candidate_ids = defaultdict(set)
-    for candidate_id, contest_id in candidate_id_to_contest_id.items():
-        contest_id_to_candidate_ids[contest_id].add(candidate_id)
-
     # Assert no candidate in multiple contests
     assert len(set.intersection(*contest_id_to_candidate_ids.values())) == 0
 
+    # Determine fixed order for candidates in each contest
+    contest_id_to_candidate_ids = {contest_id: sorted(candidate_ids) for contest_id, candidate_ids in contest_id_to_candidate_ids.items()}
+
     # Load ballots
     voter_id_to_votes = defaultdict(list)
+    contest_id_to_voter_ids = defaultdict(set)
 
     with open(ballot_image_path) as f:
         for line in f:
@@ -47,24 +46,30 @@ def load_ballot_data(master_lookup_path: str, ballot_image_path: str):
                 'candidate_id': candidate_id,
                 'candidate_rank': candidate_rank
             })
+            contest_id_to_voter_ids[contest_id].add(voter_id)
 
-    # Assert that all voters voted for the same number of candidates
-    assert len({len(votes) for votes in voter_id_to_votes.values()}) == 1
-
-    # Prune bad votes (i.e. if there is a vote with candidate_id == 0)
+    # Prune invalid votes (i.e. if there is a vote with candidate_id == 0)
     for voter_id, votes in list(voter_id_to_votes.items()):
         if any(vote['candidate_id'] == 0 for vote in votes):
             voter_id_to_votes.pop(voter_id)
 
-    # Convert votes to an ordered list of candidate_ids
-    for voter_id, votes in voter_id_to_votes.items():
-        voter_id_to_votes[voter_id] = [vote['candidate_id'] for vote in sorted(votes, key=lambda vote: vote['candidate_rank'])]
+    # Assert that all voters voted for the same number of candidates
+    assert len({len(votes) for votes in voter_id_to_votes.values()}) == 1
 
-    print(f'Number of valid votes = {len(voter_id_to_votes):,}')
+    # Assert that each voter only voted in one contest
+    assert all(len({vote['contest_id'] for vote in votes}) == 1 for votes in voter_id_to_votes.values())
 
-    # Convert to CandidateOrderBallots
+    # For each contest, convert votes to CandidateOrderBallots
+    # TODO: encryption
     contest_id_to_ballots = {}
-    for
+    for contest_id, voter_ids in contest_id_to_voter_ids.items():
+        candidates = contest_id_to_candidate_ids[contest_id]
+        ballots = []
+
+        for voter_id in voter_ids:
+            votes = voter_id_to_votes[voter_id]
+            preferences = []
+            # TODO: create candidate order ballot
 
 
 if __name__ == '__main__':
