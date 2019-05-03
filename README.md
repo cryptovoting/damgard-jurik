@@ -25,11 +25,7 @@ pip install -r requirements.txt
 python -m flask run
 ```
 
-Prior to initially running the web interface, the file `.env.example` should be copied into a new file named `.env` with the desired values set. Also note that for the portions of the site that use subdomains, you will need to either hardcode subdomain redirects into your system's host file or follow [this tutorial](https://passingcuriosity.com/2013/dnsmasq-dev-osx/) because subdomain resolution is only supported for TLDs. If you follow this tutorial, pick something other than `.dev`, as recent updates in Chrome and Firefox break that GTLD over HTTP. Finally, you will have to manually specify the hostname within `create_app`:
-
-```python
-app.config["SERVER_NAME"] = "{{YOUR_HOST}}:5000"
-```
+Prior to initially running the web interface, the file `.env.example` should be copied into a new file named `.env` with the desired values set. Also note that for the portions of the site that use subdomains, you will need to either hardcode subdomain redirects into your system's host file or follow [this tutorial](https://passingcuriosity.com/2013/dnsmasq-dev-osx/) because subdomain resolution is only supported for TLDs. If you follow this tutorial, pick something other than `.dev`, as recent updates in Chrome and Firefox break that GTLD over HTTP. Finally, you will have to manually specify the hostname you have chosen within your `.env` configuration file:
 
 ## Acknowledgements
 

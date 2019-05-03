@@ -15,5 +15,6 @@ if os.getenv('DATABASE_URL') is None:
 ENV = os.getenv('FLASK_ENV', default='production')
 DEBUG = ENV == 'development'
 SQLALCHEMY_DATABASE_URI = os.getenv('DATABASE_URL')
-SECRET_KEY = os.getenv('SECRET_KEY', default='octocat')
+SECRET_KEY = os.getenv('SECRET_KEY')
 SQLALCHEMY_TRACK_MODIFICATIONS = False
+SERVER_NAME = os.getenv('SERVER_NAME')
