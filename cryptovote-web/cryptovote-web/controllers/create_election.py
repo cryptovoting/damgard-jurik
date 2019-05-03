@@ -22,3 +22,13 @@ def verify_phone():
 @blueprint.route('/setup', subdomain='<election>')
 def register_identity(election):
     return render_template('create_election/register_identity.html')
+
+
+@blueprint.route('/register-authorities', subdomain='<election>')
+def register_authorities(election):
+    return render_template('create_election/register_authorities.html')
+
+
+@blueprint.route('/register-voters', subdomain='<election>')
+def register_voters(election):
+    return render_template('create_election/register_voters.html')

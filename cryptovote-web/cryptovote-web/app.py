@@ -31,6 +31,7 @@ def register_blueprints(app):
     """Register Flask blueprints."""
     app.register_blueprint(controllers.home.blueprint)
     app.register_blueprint(controllers.create_election.blueprint)
+    app.register_blueprint(controllers.election.blueprint)
     return None
 
 
