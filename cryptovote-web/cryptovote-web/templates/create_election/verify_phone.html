@@ -14,11 +14,11 @@
             <form>
                 <div class="text-center mb-4" style="font-size:3em;">3</div>
                 <div class="form-group text-center">
-                  <label for="name"><h3>Verify Phone</h3></label>
-                  <input class="form-control item" type="text" id="name" placeholder="Your Phone Number">
+                  <label for="phone"><h3>Verify Phone</h3></label>
+                  <input class="form-control item" type="text" id="phone" placeholder="Your Phone Number">
                 </div>
                 <div class="form-group" style="margin-top: 50px;">
-                  <a href="{{ url_for('create_election.verify_email') }}" class="btn btn-primary btn-block btn-lg" style="background-color: #0084da;">Next</a>
+                  <a href="{{ url_for('create_election.register_identity', election='test') }}" class="btn btn-primary btn-block btn-lg" style="background-color: #0084da;">Next</a>
                 </div>
             </form>
         </div>
