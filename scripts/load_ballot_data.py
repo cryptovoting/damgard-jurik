@@ -68,12 +68,14 @@ def load_ballot_data(master_lookup_path: str,
                for votes in voter_id_to_votes.values()
                for candidate_ranks in votes.values())
 
-    # TODO: Adjust candidate ranks to be in contiguous order from 1 to n
+    # Adjust candidate ranks to be in contiguous order from 1 to n
     for votes in voter_id_to_votes.values():
-        pass
+        old_candidate_ranks = votes.values()
+        old_rank_to_new_rank = {old_rank: index + 1 for index, old_rank in enumerate(old_candidate_ranks)}
 
-    exit()
-
+        for candidate_id, candidate_rank in votes.items():
+            votes[candidate_id] = old_rank_to_new_rank[candidate_rank]
+    
     # Assert that vote ranks are unique and are in a contiguous range from 1 to n
     for voter_id, votes in list(voter_id_to_votes.items()):
         candidate_ranks = list(votes.values())
