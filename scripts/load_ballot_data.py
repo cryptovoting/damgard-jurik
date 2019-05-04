@@ -1,6 +1,8 @@
 from argparse import ArgumentParser
 from collections import defaultdict
 
+from tqdm import tqdm
+
 from cryptovote.ballots import CandidateOrderBallot
 from cryptovote.damgard_jurik import keygen, PublicKey
 
@@ -60,13 +62,15 @@ def load_ballot_data(master_lookup_path: str,
             votes[candidate_id] = min(candidate_rank, votes.get(candidate_id, float('inf')))
             contest_id_to_voter_ids[contest_id].add(voter_id)
 
-    print(f'Number of valid votes = {sum(len(votes) for votes in voter_id_to_votes.values()):,}')
     print(f'Number of invalid votes = {num_invalid_votes:,}')
+    print(f'Number of valid votes = {sum(len(votes) for votes in voter_id_to_votes.values()):,}')
+    print(f'Number of voters = {len(voter_id_to_votes):,}')
 
     # Assert that each vote does not reuse a rank for multiple candidates
-    assert all(len(set(candidate_ranks)) == len(candidate_ranks)
-               for votes in voter_id_to_votes.values()
-               for candidate_ranks in votes.values())
+    for votes in voter_id_to_votes.values():
+        candidate_ranks = votes.values()
+
+        assert len(set(candidate_ranks)) == len(candidate_ranks)
 
     # Adjust candidate ranks to be in contiguous order from 1 to n
     for votes in voter_id_to_votes.values():
@@ -75,17 +79,10 @@ def load_ballot_data(master_lookup_path: str,
 
         for candidate_id, candidate_rank in votes.items():
             votes[candidate_id] = old_rank_to_new_rank[candidate_rank]
-    
-    # Assert that vote ranks are unique and are in a contiguous range from 1 to n
-    for voter_id, votes in list(voter_id_to_votes.items()):
+
+        # Assert that we did the mapping correctly
         candidate_ranks = list(votes.values())
 
-        # Assert that vote ranks are unique
-        assert len(set(candidate_ranks)) == len(candidate_ranks)
-
-        # Assert that vote ranks are in a contiguous range from 1 to n
-        if not (candidate_ranks == list(range(1, max(candidate_ranks) + 1))):
-            import pdb; pdb.set_trace()
         assert candidate_ranks == list(range(1, max(candidate_ranks) + 1))
 
     # Assert that each voter only voted in one contest
@@ -93,25 +90,41 @@ def load_ballot_data(master_lookup_path: str,
 
     # For each contest, convert votes to CandidateOrderBallots
     contest_id_to_contest = {}
-    for contest_id, voter_ids in contest_id_to_voter_ids.items():
+    for contest_id, voter_ids in tqdm(contest_id_to_voter_ids.items(), total=len(contest_id_to_voter_ids)):
         # Determine candidates in contest and sort
         candidate_ids = sorted(contest_id_to_candidate_ids[contest_id])
-
-        # Determine stop candidate id for this contest
         stop_candidate_id = max(candidate_ids) + 1
-
-        # Initialize ballots list for this contest
-        ballots = []
+        candidate_ids.append(stop_candidate_id)
+        num_candidates = len(candidate_ids)
 
         # Create CandidateOrderBallots from votes
-        for voter_id in voter_ids:
+        ballots = []
+
+        for voter_id in tqdm(voter_ids, total=len(voter_ids)):
             # Get votes for voter
             votes = voter_id_to_votes[voter_id]
 
-            # Determine preferences
-            preferences = [votes[candidate_id] for candidate_id in candidate_ids]
+            # Get stop candidate preference
+            stop_candidate_rank = len(votes) + 1
 
-            # Encrypt
+            # Determine remaining ranks for candidates not voted for
+            remaining_ranks = set(range(stop_candidate_rank + 1, num_candidates + 1))
+
+            # Determine preferences, selecting random preference for candidates not voted form
+            preferences = []
+            for candidate_id in candidate_ids:
+                if candidate_id in votes:
+                    candidate_rank = votes[candidate_id]
+                    preferences.append(candidate_rank)
+
+                elif candidate_id == stop_candidate_id:
+                    preferences.append(stop_candidate_rank)
+
+                else:
+                    # TODO: need more secure source of randomness than set pop
+                    preferences.append(remaining_ranks.pop())
+
+            # Encrypt preferences and weight
             preferences = [public_key.encrypt(preference) for preference in preferences]
             weight = public_key.encrypt(1)
 
@@ -130,8 +143,6 @@ def load_ballot_data(master_lookup_path: str,
             },
             'stop_candidate_id': stop_candidate_id
         }
-
-    import pdb; pdb.set_trace()
 
     return contest_id_to_contest
 
