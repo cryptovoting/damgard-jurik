@@ -69,7 +69,7 @@ def reweight_votes(ballots: List[FirstPreferenceBallot], elected: List[int], q: 
         d_lcm = lcm(d_lcm, t[i])
     result = []
     for ballot in ballots:
-        new_weight = private_key.encrypt(0)
+        new_weight = public_key.encrypt(0)
         for i in range(m):
             ballot.weights[i] *= d_lcm
             if candidates[i] in elected:
