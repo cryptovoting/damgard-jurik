@@ -127,3 +127,6 @@ dmypy.json
 
 IDE Config
 .idea
+
+# Database Files
+*.db
