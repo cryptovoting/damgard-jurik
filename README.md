@@ -20,12 +20,12 @@ All requirements for this package should be added to `setup.py`.
 To run an election via the web interface, run the following commands:
 
 ```bash
-cd cryptovote-web
+cd cryptovote_web
 pip install -r requirements.txt
 python -m flask run
 ```
 
-Prior to initially running the web interface, the file `.env.example` should be copied into a new file named `.env` with the desired values set. Also note that for the portions of the site that use subdomains, you will need to either hardcode subdomain redirects into your system's host file or follow [this tutorial](https://passingcuriosity.com/2013/dnsmasq-dev-osx/) because subdomain resolution is only supported for TLDs. If you follow this tutorial, pick something other than `.dev`, as recent updates in Chrome and Firefox break that GTLD over HTTP. Finally, you will have to manually specify the hostname you have chosen within your `.env` configuration file:
+Prior to initially running the web interface, the file `.env.example` should be copied into a new file named `.env` with the desired values set. Also note that Chrome seems to be the only browser that supports DNS resolution for subdomains of the localhost, so for development Chrome must be used for portions of the site that use subdomains. Finally, if actually deployed on a non-localhost server HTTPS must be used in order for WebAuthn to work.
 
 ## Real Election Data
 
