@@ -97,7 +97,7 @@ def stv_tally(ballots: List[CandidateOrderBallot], seats: int, private_key: Priv
                 elected.append(ballots[0].candidates[i])
         if len(elected) > 0:
             result += elected
-            ballots = reweight_votes(ballots, elected, q, t)
+            ballots = reweight_votes(ballots, elected, q, t, private_key, public_key)
             ballots = eliminate_candidate_set(elected, ballots, private_key, public_key)
         else:
             i = 0
