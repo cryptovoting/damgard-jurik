@@ -38,6 +38,7 @@ def load_ballot_data(master_lookup_path: str,
     # Load votes
     voter_id_to_votes = defaultdict(dict)
     contest_id_to_voter_ids = defaultdict(set)
+    num_invalid_votes = 0
 
     with open(ballot_image_path) as f:
         for line in f:
@@ -46,50 +47,30 @@ def load_ballot_data(master_lookup_path: str,
             candidate_id = int(line[36:43])
             candidate_rank = int(line[33:36])
 
-            voter_id_to_votes[voter_id][candidate_id] = candidate_rank
+            # Skip vote for a candidate not in the candidate set
+            if candidate_id not in candidate_id_to_candidate_name:
+                num_invalid_votes += 1
+                continue
+
+            # Get votes for voter_id
+            votes = voter_id_to_votes[voter_id]
+
+            # Add vote
+            # Note: if voter is voting for the same candidate twice, take the minimum rank
+            votes[candidate_id] = min(candidate_rank, votes.get(candidate_id, float('inf')))
             contest_id_to_voter_ids[contest_id].add(voter_id)
 
+    print(f'Number of valid votes = {sum(len(votes) for votes in voter_id_to_votes.values()):,}')
+    print(f'Number of invalid votes = {num_invalid_votes:,}')
 
-    # Assert that each voter doesn't vote multiple times for a candidate
+    # Assert that each vote does not reuse a rank for multiple candidates
     assert all(len(set(candidate_ranks)) == len(candidate_ranks)
                for votes in voter_id_to_votes.values()
                for candidate_ranks in votes.values())
 
-    # Prune votes that are invalid because either
-    # - The vote includes a candidate with candidate_id == 0
-    # - The vote ranks are not a contiguous rank
-    # Note: Also adjusts votes that are contiguous but don't start at 1 to start at 1
-    print(f'Number of voters before pruning = {len(voter_id_to_votes):,}')
-    num_candidate_id_0 = num_non_unique_candidates = num_non_contiguous_ranks = 0
-
-    for voter_id, votes in list(voter_id_to_votes.items()):
-        candidate_ids, candidate_ranks = zip(*votes.items())
-        min_rank, max_rank = min(candidate_ranks), max(candidate_ranks)
-
-        if any(candidate_id == 0 for candidate_id in candidate_ids):
-            num_candidate_id_0 += 1
-            voter_id_to_votes.pop(voter_id)
-
-        elif len(set(candidate_ranks)) != len(candidate_ranks):
-            num_non_unique_candidates += 1
-            voter_id_to_votes.pop(voter_id)
-
-        elif candidate_ranks != tuple(range(min_rank, max_rank + 1)):
-            num_non_contiguous_ranks += 1
-            voter_id_to_votes.pop(voter_id)
-
-        # Fix candidate_ranks if not starting at 1
-        for candidate_id, candidate_rank in votes.items():
-            votes[candidate_id] = candidate_rank - min_rank + 1
-
-    print(f'Number of voters after pruning = {len(voter_id_to_votes):,}')
-    print(f'Number of invalid votes due to candidate_id == 0 = {num_candidate_id_0:,}')
-    print(f'Number of invalid votes due to non-unique candidate ranks = {num_non_unique_candidates:,}')
-    print(f'Number of invalid votes due to non-contiguous candidate ranks = {num_non_contiguous_ranks:,}')
-
-    # Fix votes that put preferences in non-contiguous order
+    # TODO: Adjust candidate ranks to be in contiguous order from 1 to n
     for votes in voter_id_to_votes.values():
-
+        pass
 
     exit()
 
