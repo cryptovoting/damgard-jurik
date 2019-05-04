@@ -1,3 +1,13 @@
+#!/usr/bin/env python3
+"""
+load_ballot_data.py
+Boucher, Govedič, Saowakon, Swanson 2019
+
+A script which loads a ballot image and corresponding master lookup,
+performs validation of the votes and prunes invalid votes,
+and encrypts the votes and converts them to CandidateOrderBallots
+for use with Shuffle Sum STV vote tallying.
+"""
 from argparse import ArgumentParser
 from collections import defaultdict
 
@@ -5,9 +15,6 @@ from tqdm import tqdm
 
 from cryptovote.ballots import CandidateOrderBallot
 from cryptovote.damgard_jurik import keygen, PublicKey
-
-
-STOP_CANDIDATE_NAME = 'STOP'
 
 
 def load_ballot_data(master_lookup_path: str,
@@ -36,6 +43,11 @@ def load_ballot_data(master_lookup_path: str,
 
     # Assert no candidate in multiple contests
     assert set.intersection(*contest_id_to_candidate_ids.values()) == set()
+
+    # Choose stop candidate id and name
+    candidate_ids = set(candidate_id_to_candidate_name.keys())
+    stop_candidate_id = max(candidate_ids) + 1
+    candidate_id_to_candidate_name[stop_candidate_id] = 'STOP'
 
     # Load votes
     voter_id_to_votes = defaultdict(dict)
@@ -92,9 +104,7 @@ def load_ballot_data(master_lookup_path: str,
     contest_id_to_contest = {}
     for contest_id, voter_ids in tqdm(contest_id_to_voter_ids.items(), total=len(contest_id_to_voter_ids)):
         # Determine candidates in contest and sort
-        candidate_ids = sorted(contest_id_to_candidate_ids[contest_id])
-        stop_candidate_id = max(candidate_ids) + 1
-        candidate_ids.append(stop_candidate_id)
+        candidate_ids = sorted(contest_id_to_candidate_ids[contest_id]) + [stop_candidate_id]
         num_candidates = len(candidate_ids)
 
         # Create CandidateOrderBallots from votes
@@ -136,10 +146,8 @@ def load_ballot_data(master_lookup_path: str,
         contest_id_to_contest[contest_id] = {
             'ballots': ballots,
             'candidate_id_to_candidate_name': {
-                **{candidate_id: candidate_id_to_candidate_name[candidate_id]
-                   for candidate_id in candidate_ids
-                   },
-                **{stop_candidate_id: STOP_CANDIDATE_NAME}
+                candidate_id: candidate_id_to_candidate_name[candidate_id]
+                for candidate_id in candidate_ids
             },
             'stop_candidate_id': stop_candidate_id
         }
@@ -149,9 +157,9 @@ def load_ballot_data(master_lookup_path: str,
 
 if __name__ == '__main__':
     parser = ArgumentParser()
-    parser.add_argument('--master_lookup_path', type=str, required=True,
+    parser.add_argument('--master_lookup', type=str, required=True,
                         help='Path to a .txt file containing a master lookup')
-    parser.add_argument('--ballot_image_path', type=str, required=True,
+    parser.add_argument('--ballot_image', type=str, required=True,
                         help='Path to a .txt file containing a ballot image')
     args = parser.parse_args()
 

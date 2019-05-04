@@ -27,6 +27,14 @@ python -m flask run
 
 Prior to initially running the web interface, the file `.env.example` should be copied into a new file named `.env` with the desired values set. Also note that for the portions of the site that use subdomains, you will need to either hardcode subdomain redirects into your system's host file or follow [this tutorial](https://passingcuriosity.com/2013/dnsmasq-dev-osx/) because subdomain resolution is only supported for TLDs. If you follow this tutorial, pick something other than `.dev`, as recent updates in Chrome and Firefox break that GTLD over HTTP. Finally, you will have to manually specify the hostname you have chosen within your `.env` configuration file:
 
+## Real Election Data
+
+San Francisco voting data from the November 2016 election is available in the `data` directory ([source](https://www.rankedchoicevoting.org/data_clearinghouse)). The script for converting the San Francisco ballot image data to our CandidateOrderBallot format is in `scripts/load_ballot_data.py`. It can be run with:
+
+```bash
+python scripts/load_ballot_data.py --master_lookup data/san_francisco_nov_2016_master_lookup.txt --ballot_image data/san_francisco_nov_2016_ballot_image.txt
+```
+
 ## Acknowledgements
 
 This package is an implementation of the ShuffleSum algorithm proposed [in this paper](https://talmoran.net/papers/BMNRT09-shuffle-sum.pdf?fbclid=IwAR0jZ18H2ZYMsCjPkW-3ohDNom5UjbK-jMen6_lISVoWJJnPWM0A41KAS1Y)
