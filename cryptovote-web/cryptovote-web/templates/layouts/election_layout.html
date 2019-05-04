@@ -13,15 +13,16 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/aos/2.1.1/aos.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/pikaday/1.6.1/css/pikaday.min.css">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.min.css') }}">
-    {% block header %}<title>Cryptovote</title>{% endblock %}
+    {% block header %}<title>{{ election }}</title>{% endblock %}
   </head>
   <body>
     <nav class="navbar navbar-dark navbar-expand-lg fixed-top bg-white portfolio-navbar gradient">
-        <div class="container"><a class="navbar-brand logo" href="{{ url_for('home.index') }}">Cryptovote</a><button data-toggle="collapse" class="navbar-toggler" data-target="#navbarNav"><span class="sr-only">Toggle navigation</span><span class="navbar-toggler-icon"></span></button>
+        <div class="container"><a class="navbar-brand logo" href="{{ url_for('election.election_home', election=election) }}">{{ election }}</a>|&nbsp;Cryptovote<button data-toggle="collapse" class="navbar-toggler" data-target="#navbarNav"><span class="sr-only">Toggle navigation</span><span class="navbar-toggler-icon"></span></button>
             <div class="collapse navbar-collapse"
                 id="navbarNav">
                 <ul class="nav navbar-nav ml-auto">
-                    <li class="nav-item" role="presentation"><a class="nav-link" href="{{ url_for('create_election.create_name') }}">Create Election</a></li>
+                    <li class="nav-item" role="presentation"><a class="nav-link" href="{{ url_for('election.bulletin', election=election) }}">Bulletin</a></li>
+                    <li class="nav-item" role="presentation"><a class="nav-link" href="{{ url_for('election.voter_list', election=election) }}">Voter&nbsp;List</a></li>
                 </ul>
             </div>
         </div>

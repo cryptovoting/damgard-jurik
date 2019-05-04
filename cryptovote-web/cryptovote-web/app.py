@@ -1,8 +1,9 @@
 import os
 
 from flask import Flask, render_template
+from flask_migrate import Migrate
 from . import settings, controllers, models
-from .extensions import db
+from .extensions import db, install_secret_key
 
 project_dir = os.path.dirname(os.path.abspath(__file__))
 
@@ -20,10 +21,15 @@ def create_app(config_object=settings):
 
 def register_extensions(app):
     """Register Flask extensions."""
+    # Load a secret key for web sessions
+    install_secret_key(app)
+    # Initialize databse
     db.init_app(app)
-
+    # Create any database tables that don't exist
     with app.app_context():
         db.create_all()
+    # Add support for database migrations
+    Migrate(app, db)
     return None
 
 
@@ -31,6 +37,7 @@ def register_blueprints(app):
     """Register Flask blueprints."""
     app.register_blueprint(controllers.home.blueprint)
     app.register_blueprint(controllers.create_election.blueprint)
+    app.register_blueprint(controllers.election.blueprint)
     return None
 
 
