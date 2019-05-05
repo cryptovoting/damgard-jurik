@@ -91,9 +91,6 @@ def verify_phone():
         if Election.query.filter_by(name=session['election']).first():
             flash(f"Election \'{session['election']}\' already exists.")
             return redirect(url_for('create_election.create_election_name'))
-        election = Election(session['election'])
-        db.session.add(election)
-        db.session.commit()
         return redirect(url_for('create_election.register_identity',
                                 election=session['election']))
 
