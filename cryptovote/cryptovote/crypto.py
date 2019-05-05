@@ -39,6 +39,21 @@ class EncryptedNumber:
     def __radd__(self, other: Any) -> 'EncryptedNumber':
         return self.__add__(other)
 
+    def __sub__(self, other: Any) -> 'EncryptedNumber':
+        if not isinstance(other, EncryptedNumber):
+            raise ValueError('Can only subtract an EncryptedNumber from another EncryptedNumber')
+
+        if self.public_key != other.public_key:
+            raise ValueError("Attempted to subtract numbers encrypted against different public keys!")
+
+        return EncryptedNumber(
+            public_key=self.public_key,
+            value=((self.value * inv_mod(other.value, self.public_key.n_square)) % self.public_key.n_square)
+        )
+    
+    def __rsub__(self, other: Any) -> 'EncryptedNumber':
+        return self.__sub__(other)
+
     def __mul__(self, other: int) -> 'EncryptedNumber':
         if not isinstance(other, int):
             raise ValueError('Can only multiply an EncryptedNumber by an int')
