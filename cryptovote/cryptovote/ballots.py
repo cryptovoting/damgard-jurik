@@ -111,7 +111,7 @@ class CandidateOrderBallot(Ballot):
         return FirstPreferenceBallot(candidates, preferences, weights)
 
     def to_candidate_elimination(self, eliminated: List[int], private_key: PrivateKey,
-                                 public_key: PublicKey, ) -> Ballot:
+                                 public_key: PublicKey, ) -> 'CandidateEliminationBallot':
         """ Converts a candidate order ballot into a candidate elimination ballot.
             Assumes eliminated is a list of either 0 or 1, *unencrypted*. """
         # Initialization

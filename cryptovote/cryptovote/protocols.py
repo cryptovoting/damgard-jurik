@@ -22,10 +22,10 @@ def eliminate_candidate_set(candidate_set: List[int], ballots: List[CandidateOrd
     # The number of remaining candidates (note that they not necessarily have numbers 1 through m)
     m = len(ballots[0].candidates)
     eliminated = [1 if ballots[0].candidates[i] in candidate_set else 0 for i in range(m)]
-    relevant_columns = []
+    relevant_columns = set() # holds non eliminated candidates
     for i in range(m):
-        if eliminated[i] == 1:
-            relevant_columns.append(i)
+        if eliminated[i] == 0:
+            relevant_columns.add(i)
     result = []
     for ballot in ballots:
         ceb = ballot.to_candidate_elimination(eliminated, private_key, public_key)
@@ -95,7 +95,7 @@ def stv_tally(ballots: List[CandidateOrderBallot], seats: int, private_key: Priv
         fpb_ballots, t = compute_first_preference_tallies(ballots, private_key, public_key)
         elected = []
         for i in range(len(c_rem)):
-            if t[i] >= q:               # NOTE: Not sure if it needs to be >= or >
+            if t[i] >= q:               # TODO NOTE: Not sure if it needs to be >= or >
                 elected.append(ballots[0].candidates[i])
         if len(elected) > 0:
             result += elected
