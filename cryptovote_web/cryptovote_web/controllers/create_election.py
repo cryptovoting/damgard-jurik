@@ -19,6 +19,10 @@ def create_election_name():
         if not election:
             flash("Must specify an election name.")
             return render_template('create_election/election_name.html')
+        election_data = Election.query.filter_by(name=election).first()
+        if election_data:
+            flash(f"Election \"{election}\" already exists.")
+            return render_template('create_election/election_name.html')
         session['election'] = election
         session['election_role'] = f"{election}_authority"
         return redirect(url_for('create_election.verify_name'))
