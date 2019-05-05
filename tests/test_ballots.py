@@ -82,7 +82,6 @@ class TestCandidateOrderBallot(unittest.TestCase):
         weight = 1.0
         eliminated = [0, 0, 1]
         post_eliminated = [0, 1, 0]
-
         
         ballot = CandidateOrderBallot(candidates[:], [public_key.encrypt(pref) for pref in preferences],
                                        public_key.encrypt(weight))
@@ -97,6 +96,30 @@ class TestCandidateOrderBallot(unittest.TestCase):
 
         self.assertEqual(private_key.decrypt(result.weight), weight, "The weight must match")
 
+
+class TestCandidateEliminationBallot(unittest.TestCase):
+    def test_toCandidateOrderBallot_01(self):
+        public_key, private_key = generate_paillier_keypair()
+
+        candidates = [1, 2, 3]
+        preferences = [3, 1, 2]
+        weight = 1.0
+        eliminated = [0, 0, 1]
+        post_eliminated = [0, 1, 0]
+
+        ballot = CandidateEliminationBallot([public_key.encrypt(cand) for cand in candidates], [public_key.encrypt(pref) for pref in preferences],[public_key.encrypt(elim) for elim in post_eliminated],
+                                      public_key.encrypt(weight))
+
+        result = ballot.to_candidate_order(private_key, public_key)
+
+        self.assertIsInstance(result, CandidateOrderBallot,
+                              "The returned ballot must be of type CandidateOrderBallot")
+
+        self.assertListEqual([private_key.decrypt(preference) for preference in result.preferences], preferences)
+
+        self.assertListEqual(result.candidates, candidates, "The candidates lists must match")
+
+        self.assertEqual(private_key.decrypt(result.weight), weight, "The weight must match")
 
 if __name__ == '__main__':
     unittest.main(verbosity=3)
