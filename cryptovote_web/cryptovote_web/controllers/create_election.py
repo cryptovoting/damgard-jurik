@@ -100,8 +100,6 @@ def verify_phone():
 
 @blueprint.route('/setup', subdomain='<election>')
 def register_identity(election):
-    print("Setup Session")
-    print(session)
     return render_template('create_election/register_identity.html')
 
 
