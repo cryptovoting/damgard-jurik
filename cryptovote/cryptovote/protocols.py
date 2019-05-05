@@ -44,8 +44,11 @@ def compute_first_preference_tallies(ballots: List[CandidateOrderBallot], privat
     """ Compute First-Preference Tallies (1b)
         Assumes there is at least one ballot.   """
     # Initialization
+    if len(ballots) == 0:
+        raise ValueError
+
     m = len(ballots[0].candidates)
-    encrypted_tallies = [public_key.encrypt(0) for i in range(m)]
+    encrypted_tallies = [public_key.encrypt(0) for _ in range(m)]
     # Perform computation
     fpb_ballots = []
     for ballot in ballots:
