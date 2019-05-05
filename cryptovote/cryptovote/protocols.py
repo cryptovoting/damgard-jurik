@@ -40,19 +40,21 @@ def eliminate_candidate_set(candidate_set: List[int], ballots: List[CandidateOrd
     return result
 
 
-def compute_first_preference_tallies(ballots: List[CandidateOrderBallot], private_key: PrivateKey, public_key: PublicKey) -> List[int]:
+def compute_first_preference_tallies(ballots: List[CandidateOrderBallot], private_key: PrivateKey, public_key: PublicKey) -> (List[FirstPreferenceBallot], List[int]):
     """ Compute First-Preference Tallies (1b)
         Assumes there is at least one ballot.   """
     # Initialization
     m = len(ballots[0].candidates)
     encrypted_tallies = [public_key.encrypt(0) for i in range(m)]
     # Perform computation
+    fpb_ballots = []
     for ballot in ballots:
         fpb = ballot.to_first_preference(private_key, public_key)
+        fpb_ballots.append(fpb)
         for i in range(m):
             encrypted_tallies[i] += fpb.weights[i]
     # Return the result
-    return [private_key.decrypt(encrypted_tally) for encrypted_tally in encrypted_tallies]
+    return fpb_ballots, [private_key.decrypt(encrypted_tally) for encrypted_tally in encrypted_tallies]
 
 
 def reweight_votes(ballots: List[FirstPreferenceBallot], elected: List[int], q: int, t: List[int], private_key: PrivateKey, public_key: PublicKey) -> List[CandidateOrderBallot]:
@@ -69,7 +71,7 @@ def reweight_votes(ballots: List[FirstPreferenceBallot], elected: List[int], q: 
         d_lcm = lcm(d_lcm, t[i])
     result = []
     for ballot in ballots:
-        new_weight = private_key.encrypt(0)
+        new_weight = public_key.encrypt(0)
         for i in range(m):
             ballot.weights[i] *= d_lcm
             if candidates[i] in elected:
@@ -90,14 +92,14 @@ def stv_tally(ballots: List[CandidateOrderBallot], seats: int, private_key: Priv
     q = len(ballots)//(seats+1) + 1     # the quota required for election
     result = []
     while len(c_rem) > seats:
-        t = compute_first_preference_tallies(ballots, private_key, public_key)
+        fpb_ballots, t = compute_first_preference_tallies(ballots, private_key, public_key)
         elected = []
         for i in range(len(c_rem)):
             if t[i] >= q:               # NOTE: Not sure if it needs to be >= or >
                 elected.append(ballots[0].candidates[i])
         if len(elected) > 0:
             result += elected
-            ballots = reweight_votes(ballots, elected, q, t)
+            ballots = reweight_votes(fpb_ballots, elected, q, t, private_key, public_key)
             ballots = eliminate_candidate_set(elected, ballots, private_key, public_key)
         else:
             i = 0

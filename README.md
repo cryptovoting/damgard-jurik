@@ -20,12 +20,20 @@ All requirements for this package should be added to `setup.py`.
 To run an election via the web interface, run the following commands:
 
 ```bash
-cd cryptovote-web
+cd cryptovote_web
 pip install -r requirements.txt
 python -m flask run
 ```
 
-Prior to initially running the web interface, the file `.env.example` should be copied into a new file named `.env` with the desired values set.
+Prior to initially running the web interface, the file `.env.example` should be copied into a new file named `.env` with the desired values set. Also note that Chrome seems to be the only browser that supports DNS resolution for subdomains of the localhost, so for development Chrome must be used for portions of the site that use subdomains. Finally, if actually deployed on a non-localhost server HTTPS must be used in order for WebAuthn to work.
+
+## Real Election Data
+
+San Francisco voting data from the November 2016 election is available in the `data` directory ([source](https://www.rankedchoicevoting.org/data_clearinghouse)). The script for converting the San Francisco ballot image data to our CandidateOrderBallot format is in `scripts/load_ballot_data.py`. It can be run with:
+
+```bash
+python scripts/load_ballot_data.py --master_lookup data/san_francisco_nov_2016_master_lookup.txt --ballot_image data/san_francisco_nov_2016_ballot_image.txt
+```
 
 ## Acknowledgements
 
