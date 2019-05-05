@@ -60,8 +60,8 @@ def compute_first_preference_tallies(ballots: List[CandidateOrderBallot], privat
     return fpb_ballots, [private_key.decrypt(encrypted_tally) for encrypted_tally in encrypted_tallies]
 
 
-def reweight_votes(ballots: List[FirstPreferenceBallot], elected: List[int], q: int, t: List[int], private_key: PrivateKey, public_key: PublicKey) -> (List[CandidateOrderBallot], int):
-    """ Reweight the votes for elected candidates in S with quota q. """
+def reweigh_votes(ballots: List[FirstPreferenceBallot], elected: List[int], q: int, t: List[int], private_key: PrivateKey, public_key: PublicKey) -> (List[CandidateOrderBallot], int):
+    """ Reweigh the votes for elected candidates in S with quota q. """
     if len(ballots) == 0:
         raise ValueError
     candidates = ballots[0].candidates
@@ -69,9 +69,8 @@ def reweight_votes(ballots: List[FirstPreferenceBallot], elected: List[int], q: 
     d_lcm = 1
     for i in range(m):
         # only consider the elected candidates
-        if candidates[i] not in elected:
-            continue
-        d_lcm = lcm(d_lcm, t[i])
+        if candidates[i] in elected:
+            d_lcm = lcm(d_lcm, t[i])
     result = []
     for ballot in ballots:
         new_weight = public_key.encrypt(0)
@@ -97,18 +96,18 @@ def stv_tally(ballots: List[CandidateOrderBallot], seats: int, stop_candidate: i
     offset = 1 if stop_candidate in c_rem else 0
     while len(c_rem)-offset > seats:
         # print("Computing FPT...")
-        fpb_ballots, t = compute_first_preference_tallies(ballots, private_key, public_key)
+        fpb_ballots, tallies = compute_first_preference_tallies(ballots, private_key, public_key)
         elected = []
         for i in range(len(c_rem)):
             if c_rem[i] == stop_candidate:
                 continue
-            if t[i] >= q:               # TODO NOTE: Not sure if it needs to be >= or >
+            if tallies[i] >= q:               # TODO NOTE: Not sure if it needs to be >= or >
                 elected.append(c_rem[i])
         if len(elected) > 0:
             result += elected
             seats -= len(elected)
-            # print(len(elected), "candidates elected. Reweighting votes...")
-            ballots, d_lcm = reweight_votes(fpb_ballots, elected, q, t, private_key, public_key)
+            # print(len(elected), "candidates elected. Reweighing votes...")
+            ballots, d_lcm = reweigh_votes(fpb_ballots, elected, q, tallies, private_key, public_key)
             q *= d_lcm
             # print("Eliminating set...")
             ballots = eliminate_candidate_set(elected, ballots, private_key, public_key)
@@ -117,7 +116,7 @@ def stv_tally(ballots: List[CandidateOrderBallot], seats: int, stop_candidate: i
             for j in range(len(c_rem)):
                 if c_rem[j] == stop_candidate:
                     continue
-                if i == None or t[j] < t[i]:
+                if i == None or tallies[j] < tallies[i]:
                     i = j
             # print("Eliminating set...", i, c_rem[i])
             ballots = eliminate_candidate_set([c_rem[i]], ballots, private_key, public_key)
