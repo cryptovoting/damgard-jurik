@@ -17,7 +17,7 @@
   </head>
   <body>
     <nav class="navbar navbar-dark navbar-expand-lg fixed-top bg-white portfolio-navbar gradient">
-        <div class="container"><a class="navbar-brand logo" href="{{ url_for('election.election_home', election=election) }}">{{ election | title }}</a>|&nbsp;Cryptovote<button data-toggle="collapse" class="navbar-toggler" data-target="#navbarNav"><span class="sr-only">Toggle navigation</span><span class="navbar-toggler-icon"></span></button>
+        <div class="container"><a class="navbar-brand logo" href="{{ url_for('election.election_home', election=election) }}">{{ election | title }}</a><span class="d-none d-lg-block">|&nbsp;</span>Cryptovote<button data-toggle="collapse" class="navbar-toggler" data-target="#navbarNav"><span class="sr-only">Toggle navigation</span><span class="navbar-toggler-icon"></span></button>
             <div class="collapse navbar-collapse"
                 id="navbarNav">
                 <ul class="nav navbar-nav ml-auto">
@@ -48,8 +48,8 @@
     </main>
     <footer class="page-footer">
         <div class="container">
-            <div class="links"><a href="{{ url_for('create_election.create_election_name') }}">Start</a><a href="{{ url_for('home.about') }}">About</a></div>
-            <div class="social-icons"><a href="https://courses.csail.mit.edu/6.857/2019/"><i class="icon ion-social-facebook"></i></a><a href="https://courses.csail.mit.edu/6.857/2019/"><i class="icon ion-social-instagram-outline"></i></a><a href="https://courses.csail.mit.edu/6.857/2019/"><i class="icon ion-social-twitter"></i></a></div>
+            <div class="links"><a href="{{ url_for('home.index') }}">Cryptovote</a><a href="{{ url_for('home.about') }}">About</a></div>
+            <div class="social-icons"><a href="https://www.facebook.com/MITCSAIL/"><i class="icon ion-social-facebook"></i></a><a href="https://www.instagram.com/mit_csail/"><i class="icon ion-social-instagram-outline"></i></a><a href="https://twitter.com/MIT_CSAIL"><i class="icon ion-social-twitter"></i></a></div>
         </div>
     </footer>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>

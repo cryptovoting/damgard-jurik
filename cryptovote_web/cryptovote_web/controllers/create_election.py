@@ -19,6 +19,10 @@ def create_election_name():
         if not election:
             flash("Must specify an election name.")
             return render_template('create_election/election_name.html')
+        election_data = Election.query.filter_by(name=election).first()
+        if election_data:
+            flash(f"Election \"{election}\" already exists.")
+            return render_template('create_election/election_name.html')
         session['election'] = election
         session['election_role'] = f"{election}_authority"
         return redirect(url_for('create_election.verify_name'))
@@ -91,17 +95,12 @@ def verify_phone():
         if Election.query.filter_by(name=session['election']).first():
             flash(f"Election \'{session['election']}\' already exists.")
             return redirect(url_for('create_election.create_election_name'))
-        election = Election(session['election'])
-        db.session.add(election)
-        db.session.commit()
         return redirect(url_for('create_election.register_identity',
                                 election=session['election']))
 
 
 @blueprint.route('/setup', subdomain='<election>')
 def register_identity(election):
-    print("Setup Session")
-    print(session)
     return render_template('create_election/register_identity.html')
 
 

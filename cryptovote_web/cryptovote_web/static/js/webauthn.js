@@ -78,7 +78,7 @@ const didClickRegister = async (e) => {
     }
 
     // reload the page after a successful result
-    window.location.reload();
+    window.location.replace("/");
 }
 
 /**

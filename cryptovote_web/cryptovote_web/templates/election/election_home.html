@@ -1,14 +1,14 @@
 {% extends "layouts/election_layout.html" %}
 
 {% block header %}
-<title>{{ election }}</title>
+<title>{{ election | title }}</title>
 {% endblock %}
 
 {% block content %}
 <section class="portfolio-block contact">
     <div class="container">
         <div class="heading">
-            <h1>{{ election }}</h1>
+            <h1>{{ election | title }}</h1>
             <p>Election Home</p>
         </div>
     </div>
