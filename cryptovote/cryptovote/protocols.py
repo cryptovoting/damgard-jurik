@@ -57,7 +57,7 @@ def compute_first_preference_tallies(ballots: List[CandidateOrderBallot], privat
     return fpb_ballots, [private_key.decrypt(encrypted_tally) for encrypted_tally in encrypted_tallies]
 
 
-def reweight_votes(ballots: List[FirstPreferenceBallot], elected: List[int], q: int, t: List[int], private_key: PrivateKey, public_key: PublicKey) -> List[CandidateOrderBallot]:
+def reweight_votes(ballots: List[FirstPreferenceBallot], elected: List[int], q: int, t: List[int], private_key: PrivateKey, public_key: PublicKey) -> (List[CandidateOrderBallot], int):
     """ Reweight the votes for elected candidates in S with quota q. """
     if len(ballots) == 0:
         raise ValueError
@@ -79,10 +79,10 @@ def reweight_votes(ballots: List[FirstPreferenceBallot], elected: List[int], q: 
                 ballot.weights[i] /= t[i]
             new_weight += ballot.weights[i]
         result.append(CandidateOrderBallot(ballot.candidates, ballot.preferences, new_weight))
-    return result
+    return result, d_lcm
 
 
-def stv_tally(ballots: List[CandidateOrderBallot], seats: int, private_key: PrivateKey, public_key: PublicKey) -> List[int]:
+def stv_tally(ballots: List[CandidateOrderBallot], seats: int, stop_candidate: int, private_key: PrivateKey, public_key: PublicKey) -> List[int]:
     """ The main protocol of the ShuffleSum voting algorithm.
         Assumes there is at least one ballot.
         Returns a list of elected candidates. """
@@ -91,21 +91,35 @@ def stv_tally(ballots: List[CandidateOrderBallot], seats: int, private_key: Priv
     c_rem = ballots[0].candidates       # the remaining candidates
     q = len(ballots)//(seats+1) + 1     # the quota required for election
     result = []
-    while len(c_rem) > seats:
+    offset = 1 if stop_candidate in c_rem else 0
+    while len(c_rem)-offset > seats:
+        # print("Computing FPT...")
         fpb_ballots, t = compute_first_preference_tallies(ballots, private_key, public_key)
         elected = []
         for i in range(len(c_rem)):
+            if c_rem[i] == stop_candidate:
+                continue
             if t[i] >= q:               # TODO NOTE: Not sure if it needs to be >= or >
-                elected.append(ballots[0].candidates[i])
+                elected.append(c_rem[i])
         if len(elected) > 0:
             result += elected
-            ballots = reweight_votes(fpb_ballots, elected, q, t, private_key, public_key)
+            seats -= len(elected)
+            # print(len(elected), "candidates elected. Reweighting votes...")
+            ballots, d_lcm = reweight_votes(fpb_ballots, elected, q, t, private_key, public_key)
+            q *= d_lcm
+            # print("Eliminating set...")
             ballots = eliminate_candidate_set(elected, ballots, private_key, public_key)
         else:
-            i = 0
+            i = None
             for j in range(len(c_rem)):
-                if t[j] < t[i]:
+                if c_rem[j] == stop_candidate:
+                    continue
+                if i == None or t[j] < t[i]:
                     i = j
-            ballots = eliminate_candidate_set([i], ballots, private_key, public_key)
+            # print("Eliminating set...", i, c_rem[i])
+            ballots = eliminate_candidate_set([c_rem[i]], ballots, private_key, public_key)
         c_rem = ballots[0].candidates
+    for i in range(len(c_rem)):
+        if c_rem[i] != stop_candidate:
+            result.append(c_rem[i])
     return result
