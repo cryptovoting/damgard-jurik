@@ -69,7 +69,8 @@ def webauthn_begin_activate(election):
     session['name'] = name
 
     rp_name = RP_ID
-    origin = f"http://{election}.{ORIGIN}"
+    http = request.url.split("://")
+    origin = f"{http[0]}://{election}.{ORIGIN}"
     challenge = generate_challenge(32)
     ukey = generate_ukey()
 
@@ -144,7 +145,8 @@ def verify_credential_info(election):
     none_attestation_permitted = True
 
     rp_name = RP_ID
-    origin = f"http://{election}.{ORIGIN}"
+    http = request.url.split("://")
+    origin = f"{http[0]}://{election}.{ORIGIN}"
 
     webauthn_registration_response = webauthn.WebAuthnRegistrationResponse(
         rp_name,
@@ -219,7 +221,8 @@ def verify_assertion(election):
         user.ukey, user.username, user.display_name, user.icon_url,
         user.credential_id, user.pub_key, user.sign_count, user.rp_id)
 
-    origin = f"http://{election}.{ORIGIN}"
+    http = request.url.split("://")
+    origin = f"{http[0]}://{election}.{ORIGIN}"
 
     webauthn_assertion_response = webauthn.WebAuthnAssertionResponse(
         webauthn_user,
