@@ -24,7 +24,6 @@ def create_election_name():
             flash(f"Election \"{election}\" already exists.")
             return render_template('create_election/election_name.html')
         session['election'] = election
-        session['election_role'] = f"{election}_authority"
         return redirect(url_for('create_election.verify_name'))
 
 

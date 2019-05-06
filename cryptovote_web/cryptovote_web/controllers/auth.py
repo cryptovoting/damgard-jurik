@@ -1,18 +1,7 @@
 import os
 import webauthn
-
-from flask import flash
-from flask import jsonify
-from flask import make_response
-from flask import redirect
-from flask import request
-from flask import session
-from flask import url_for
-from flask import Blueprint
-from flask_login import login_required
-from flask_login import login_user
-from flask_login import logout_user
-
+from flask import jsonify, make_response, redirect, request, session, url_for, Blueprint
+from flask_login import login_required, login_user, logout_user
 from ..helpers import generate_challenge, generate_ukey
 from ..models import Authority, Voter, Election
 from ..settings import SERVER_NAME
@@ -30,30 +19,15 @@ TRUST_ANCHOR_DIR = '../trusted_attestation_roots'
 
 @blueprint.route('/webauthn_begin_activate', subdomain='<election>', methods=['POST'])
 def webauthn_begin_activate(election):
-
-    if 'election_role' in session:
-        split = session['election_role'].split('_')
-        if len(split) == 2 and split[0] == election:
-            session['role'] = split[1]
-        else:
-            session['role'] = "voter"
-    else:
-        session['role'] = "voter"
-
     email = session['email']
     name = session['name']
-    role = session['role']
-
-    if role != "authority" and role != "voter":
-        return make_response(jsonify({'fail': 'Invalid role.'}), 401)
 
     if not len(email):
         return make_response(jsonify({'fail': 'Invalid email.'}), 401)
     if not len(name):
         return make_response(jsonify({'fail': 'Invalid  name.'}), 401)
 
-    if Authority.query.filter(Election.name==election, Authority.email==email).first() or \
-       Voter.query.filter(Election.name==election, Authority.email==email).first():
+    if Authority.query.filter(Election.name==election, Authority.email==email).first():
         return make_response(jsonify({'fail': 'User already exists.'}), 401)
 
     if 'register_ukey' in session:
@@ -65,10 +39,6 @@ def webauthn_begin_activate(election):
     if 'challenge' in session:
         del session['challenge']
 
-    session['email'] = email
-    session['name'] = name
-
-    rp_name = RP_ID
     http = request.url.split("://")
     origin = f"{http[0]}://{election}.{ORIGIN}"
     challenge = generate_challenge(32)
@@ -78,7 +48,7 @@ def webauthn_begin_activate(election):
     session['register_ukey'] = ukey
 
     make_credential_options = webauthn.WebAuthnMakeCredentialOptions(
-        challenge, rp_name, RP_ID, ukey, email, name, origin)
+        challenge, RP_ID, RP_ID, ukey, email, name, origin)
 
     return jsonify(make_credential_options.registration_dict)
 
@@ -90,11 +60,7 @@ def webauthn_begin_assertion(election):
     if not len(email):
         return make_response(jsonify({'fail': 'Invalid email.'}), 401)
 
-    role = "authority"
     user = Authority.query.filter_by(election=election, email=email).first()
-    if not user:
-        user = Voter.query.filter_by(election=election, email=email).first()
-        role = "voter"
     if not user:
         return make_response(jsonify({'fail': 'User does not exist.'}), 401)
     if not user.credential_id:
@@ -102,14 +68,8 @@ def webauthn_begin_assertion(election):
 
     if 'challenge' in session:
         del session['challenge']
-
     challenge = generate_challenge(32)
-
     session['challenge'] = challenge
-
-    if 'role' in session:
-        del session['role']
-    session['role'] = role
 
     webauthn_user = webauthn.WebAuthnUser(
         user.ukey, user.username, user.display_name, user.icon_url,
@@ -128,14 +88,6 @@ def verify_credential_info(election):
     name = session['name']
     ukey = session['register_ukey']
 
-    role = session['role']
-    if role == "authority":
-        User = Authority
-    elif role == "voter":
-        User = Voter
-    else:
-        return jsonify({'fail': 'Invalid role.'})
-
     registration_response = request.form
     trust_anchor_dir = os.path.join(
         os.path.dirname(os.path.abspath(__file__)), TRUST_ANCHOR_DIR)
@@ -143,12 +95,11 @@ def verify_credential_info(election):
     self_attestation_permitted = True
     none_attestation_permitted = True
 
-    rp_name = RP_ID
     http = request.url.split("://")
     origin = f"{http[0]}://{election}.{ORIGIN}"
 
     webauthn_registration_response = webauthn.WebAuthnRegistrationResponse(
-        rp_name,
+        RP_ID,
         origin,
         registration_response,
         challenge,
@@ -163,14 +114,7 @@ def verify_credential_info(election):
     except Exception as e:
         return jsonify({'fail': 'Registration failed. Error: {}'.format(e)})
 
-    # Step 17.
-    #
-    # Check that the credentialId is not yet registered to any other user.
-    # If registration is requested for a credential that is already registered
-    # to a different user, the Relying Party SHOULD fail this registration
-    # ceremony, or it MAY decide to accept the registration, e.g. while deleting
-    # the older registration.
-    credential_id_exists = User.query.filter_by(
+    credential_id_exists = Authority.query.filter_by(
         credential_id=webauthn_credential.credential_id).first()
     if credential_id_exists:
         return make_response(
@@ -178,22 +122,23 @@ def verify_credential_info(election):
                 'fail': 'Credential ID already exists.'
             }), 401)
 
-    existing_user = User.query.filter(Election.name==election, User.email==email).first()
+    existing_user = Authority.query.filter(
+        Election.name == election, Authority.email == email).first()
     if not existing_user:
         webauthn_credential.credential_id = str(
             webauthn_credential.credential_id, "utf-8")
         # Create the election
         election_data = Election(election)
         # Create the user
-        user = User(
+        user = Authority(
             ukey=ukey,
             email=email,
             name=name,
-            election = election_data,
+            election=election_data,
             pub_key=webauthn_credential.public_key,
             credential_id=webauthn_credential.credential_id,
             sign_count=webauthn_credential.sign_count,
-            rp_id=rp_name,
+            rp_id=RP_ID,
             icon_url=origin)
         db.session.add(user)
         db.session.commit()
@@ -209,9 +154,8 @@ def verify_assertion(election):
     assertion_response = request.form
     credential_id = assertion_response.get('id')
 
-    user = Authority.query.filter_by(election=election, credential_id=credential_id).first()
-    if not user:
-        user = Voter.query.filter_by(election=election, credential_id=credential_id).first()
+    user = Authority.query.filter_by(election=election,
+                                     credential_id=credential_id).first()
     if not user:
         return make_response(jsonify({'fail': 'User does not exist.'}), 401)
 
@@ -234,7 +178,7 @@ def verify_assertion(election):
     except Exception as e:
         return jsonify({'fail': 'Assertion failed. Error: {}'.format(e)})
 
-    # Update counter.
+    # Update counter
     user.sign_count = sign_count
     db.session.add(user)
     db.session.commit()
