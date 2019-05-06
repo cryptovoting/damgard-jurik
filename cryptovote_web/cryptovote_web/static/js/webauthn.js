@@ -77,8 +77,13 @@ const didClickRegister = async (e) => {
         return console.error("Server validation of credential failed:", err);
     }
 
-    // reload the page after a successful result
-    window.location.replace("/");
+    // Redirect to the correct page on success
+    if (window.location.pathname == "/setup") {
+      window.location.replace("/register-voters")
+    } else {
+      window.location.replace("/");
+    }
+
 }
 
 /**

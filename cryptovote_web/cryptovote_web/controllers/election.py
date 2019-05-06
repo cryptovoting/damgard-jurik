@@ -1,7 +1,11 @@
 # -*- coding: utf-8 -*-
-from flask import Blueprint, render_template
+from flask import Blueprint, render_template, request, redirect, url_for
 from flask_login import login_required
-from ..helpers import election_exists
+from json import loads
+from ..helpers import election_exists, send_voter_email
+from ..models import Voter, Election
+from ..extensions import db
+
 
 blueprint = Blueprint('election', __name__)
 
@@ -36,8 +40,23 @@ def results(election):
     return render_template('election/results.html', election=election)
 
 
-@blueprint.route('/manage', subdomain='<election>')
+@blueprint.route('/register-voters', subdomain='<election>', methods=['GET', 'POST'])
 @login_required
 @election_exists
-def manage(election):
-    return render_template('election/manage.html', election=election)
+def register_voters(election):
+    if request.method == 'GET':
+        return render_template('election/register_voters.html', election=election)
+    else:
+        # Add the new voters to the database
+        voter_emails = loads(request.form.get('voter_emails', ""))
+        for email in voter_emails:
+            # Ensure that the voter doesn't already exist
+            user = Voter.query.filter(Voter.election == election,
+                                      Voter.email == email).first()
+            if not user:
+                voter = Voter(email=email, election=election)
+                db.session.add(voter)
+                send_voter_email(voter)
+        db.session.commit()
+        # Redirect to the election homepage
+        return redirect(url_for('election.election_home', election=election.name))

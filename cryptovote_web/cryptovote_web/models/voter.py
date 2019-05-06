@@ -7,7 +7,7 @@ class Voter(db.Model):
         they are a voter. """
 
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.Text, nullable=False)
+    name = db.Column(db.Text)
     email = db.Column(db.Text, nullable=False)
     email_confirmed = db.Column(db.Boolean, default=False, nullable=False)
     email_key = db.Column(db.Text, unique=True, nullable=False)

@@ -34,3 +34,7 @@ def install_secret_key(app, filename='secret.key'):
 def title(value):
     """ Title cases a string, replacing hyphens with spaces """
     return value.replace('-', ' ').title()
+
+def suppress_none(value):
+    """ Returns empty string for none, otherwise the passed value """
+    return value if value else ""

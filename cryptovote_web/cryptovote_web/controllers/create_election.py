@@ -1,7 +1,6 @@
 import re
 from flask import Blueprint, render_template, request, session, flash, redirect, url_for
 from ..models import Election
-from ..extensions import db
 
 blueprint = Blueprint('create_election', __name__)
 
@@ -76,8 +75,3 @@ def verify_email():
 @blueprint.route('/setup', subdomain='<election>')
 def register_identity(election):
     return render_template('create_election/register_identity.html')
-
-
-@blueprint.route('/register-voters', subdomain='<election>')
-def register_voters(election):
-    return render_template('create_election/register_voters.html')

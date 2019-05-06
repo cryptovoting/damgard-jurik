@@ -23,7 +23,7 @@
             {% for voter in election.voters %}
               <tr>
                 <th scope="row">{{ loop.index }}</th>
-                <td>{{ voter.name }}</td>
+                <td>{{ voter.name | suppress_none }}</td>
                 <td>{{ voter.email }}</td>
               </tr>
             {% endfor %}

@@ -25,7 +25,7 @@
                     <li class="nav-item" role="presentation"><a class="nav-link" href="{{ url_for('election.voter_list', election=election.name) }}">Voters</a></li>
                     <li class="nav-item" role="presentation"><a class="nav-link" href="{{ url_for('election.authority_list', election=election.name) }}">Authorities</a></li>
                     {% if current_user.is_authenticated %}
-                      <li class="nav-item" role="presentation"><a class="nav-link" href="{{ url_for('election.manage', election=election.name) }}">Manage</a></li>
+                      <li class="nav-item" role="presentation"><a class="nav-link" href="{{ url_for('election.register_voters', election=election.name) }}">Register Voters</a></li>
                       <li class="nav-item" role="presentation"><a class="nav-link" href="{{ url_for('auth.logout', election=election.name) }}">Logout</a></li>
                     {% else %}
                       <li class="nav-item" role="presentation"><a class="nav-link" href="{{ url_for('auth.login', election=election.name) }}">Login</a></li>
