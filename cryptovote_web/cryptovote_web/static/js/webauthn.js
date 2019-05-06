@@ -206,7 +206,11 @@ const didClickLogin = async (e) => {
         return console.error("Error when validating assertion on server:", err);
     }
 
-    window.location.reload();
+    urlParams = new URLSearchParams(window.location.search);
+    next = urlParams.get('next') || "/";
+
+    console.log(next);
+    window.location.href = next;
 };
 
 /**

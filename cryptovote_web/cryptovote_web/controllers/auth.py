@@ -1,8 +1,8 @@
 import os
 import webauthn
-from flask import jsonify, make_response, redirect, request, session, url_for, Blueprint
+from flask import jsonify, make_response, redirect, request, session, url_for, Blueprint, render_template
 from flask_login import login_required, login_user, logout_user, current_user
-from ..helpers import generate_challenge, generate_ukey
+from ..helpers import generate_challenge, generate_ukey, election_exists
 from ..models import Authority, Election
 from ..settings import SERVER_NAME
 from ..extensions import db, login_manager
@@ -18,8 +18,8 @@ TRUST_ANCHOR_DIR = '../trusted_attestation_roots'
 
 
 @login_manager.user_loader
-def load_user(email):
-    return Authority.filter_by(email=email).first()
+def load_user(user_id):
+    return Authority.query.get(user_id)
 
 
 @blueprint.route('/webauthn_begin_activate', subdomain='<election>', methods=['POST'])
@@ -65,7 +65,8 @@ def webauthn_begin_assertion(election):
     if not len(email):
         return make_response(jsonify({'fail': 'Invalid email.'}), 401)
 
-    user = Authority.query.filter_by(election=election, email=email).first()
+    user = Authority.query.filter(Election.name == election,
+                                  Authority.email == email).first()
     if not user:
         return make_response(jsonify({'fail': 'User does not exist.'}), 401)
     if not user.credential_id:
@@ -77,7 +78,7 @@ def webauthn_begin_assertion(election):
     session['challenge'] = challenge
 
     webauthn_user = webauthn.WebAuthnUser(
-        user.ukey, user.username, user.display_name, user.icon_url,
+        user.ukey, user.email, user.name, user.icon_url,
         user.credential_id, user.pub_key, user.sign_count, user.rp_id)
 
     webauthn_assertion_options = webauthn.WebAuthnAssertionOptions(
@@ -155,6 +156,8 @@ def verify_credential_info(election):
     else:
         return make_response(jsonify({'fail': 'User already exists.'}), 401)
 
+    login_user(user)
+
     return jsonify({'success': 'User successfully registered.'})
 
 
@@ -164,13 +167,13 @@ def verify_assertion(election):
     assertion_response = request.form
     credential_id = assertion_response.get('id')
 
-    user = Authority.query.filter_by(election=election,
-                                     credential_id=credential_id).first()
+    user = Authority.query.filter(Election.name == election,
+                                  Authority.credential_id == credential_id).first()
     if not user:
         return make_response(jsonify({'fail': 'User does not exist.'}), 401)
 
     webauthn_user = webauthn.WebAuthnUser(
-        user.ukey, user.username, user.display_name, user.icon_url,
+        user.ukey, user.email, user.name, user.icon_url,
         user.credential_id, user.pub_key, user.sign_count, user.rp_id)
 
     http = request.url.split("://")
@@ -197,12 +200,19 @@ def verify_assertion(election):
 
     return jsonify({
         'success':
-        'Successfully authenticated as {}'.format(user.username)
+        'Successfully authenticated as {}'.format(user.email)
     })
 
 
 @blueprint.route('/logout', subdomain='<election>')
 @login_required
+@election_exists
 def logout(election):
     logout_user()
-    return redirect(url_for('election.election_home', election=election))
+    return redirect(url_for('election.election_home', election=election.name))
+
+
+@blueprint.route('/login', subdomain='<election>')
+@election_exists
+def login(election):
+    return render_template('auth/authority_login.html', election=election)
