@@ -126,7 +126,6 @@ def verify_credential_info(election):
     challenge = session['challenge']
     email = session['email']
     name = session['name']
-    phone = session['phone']
     ukey = session['register_ukey']
 
     role = session['role']
@@ -190,7 +189,6 @@ def verify_credential_info(election):
             ukey=ukey,
             email=email,
             name=name,
-            phone=phone,
             election = election_data,
             pub_key=webauthn_credential.public_key,
             credential_id=webauthn_credential.credential_id,

@@ -11,8 +11,6 @@ class Authority(db.Model, FlaskLoginUser):
     name = db.Column(db.Text)
     email = db.Column(db.Text)
     email_confirmed = db.Column(db.Boolean)
-    phone = db.Column(db.Text)
-    phone_confirmed = db.Column(db.Boolean)
     election_id = db.Column(db.Integer, db.ForeignKey('election.id'), nullable=False)
 
     ukey = db.Column(db.String(20), unique=True, nullable=False)
