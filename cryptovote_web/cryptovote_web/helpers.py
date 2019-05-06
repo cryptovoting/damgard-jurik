@@ -31,7 +31,8 @@ def generate_ukey():
 
 def election_exists(f):
     """ Verifies that an election exists and redirects to home otherwise.
-        Requires that the election name is the first argument to the
+        It also replaces the election name argument with the corresponding
+        object. Requires that the election name is the first argument to the
         function. Should be applied after @blueprint.route() """
     @wraps(f)
     def decorated(*args, **kwargs):
@@ -40,5 +41,6 @@ def election_exists(f):
         election_data = Election.query.filter_by(name=kwargs['election']).first()
         if not election_data:
             return redirect(url_for('home.index'))
+        kwargs['election'] = election_data
         return f(*args, **kwargs)
     return decorated

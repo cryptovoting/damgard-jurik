@@ -12,6 +12,7 @@ class Election(db.Model):
     authorities = db.relationship('Authority',
                                   backref=db.backref('election', lazy='joined'),
                                   lazy=True)
+    bulletin = db.Column(db.Text, default="")
 
     def __init__(self, name):
         self.name = name
