@@ -4,6 +4,10 @@ import string
 from .models.election import Election
 from functools import wraps
 from flask import url_for, redirect
+from sendgrid import SendGridAPIClient
+from sendgrid.helpers.mail import Mail
+from .settings import SENDGRID_API_KEY, SENDGRID_FROM_DOMAIN
+from .extensions import title
 
 
 def generate_challenge(challenge_len):
@@ -44,3 +48,31 @@ def election_exists(f):
         kwargs['election'] = election_data
         return f(*args, **kwargs)
     return decorated
+
+
+def send_voter_email(voter):
+    election = title(voter.election.name)
+    message = Mail(
+        from_email=f"Cryptovote <{voter.election.name}@{SENDGRID_FROM_DOMAIN}>",
+        to_emails=f"{voter.name} <{voter.email}>",
+        subject=f'Vote in {election}',
+        html_content=f'Your secret key is: {voter.email_key}')
+    try:
+        sg = SendGridAPIClient(SENDGRID_API_KEY)
+        sg.send(message)
+    except Exception as e:
+        print(e.message)
+
+
+def send_authority_email(authority):
+    election = title(authority.election.name)
+    message = Mail(
+        from_email=f"Cryptovote <{authority.election.name}@{SENDGRID_FROM_DOMAIN}>",
+        to_emails=f"{authority.name} <{authority.email}>",
+        subject=f'Invitation to Administer {election}',
+        html_content=f'Your secret key is: {authority.email_key}')
+    try:
+        sg = SendGridAPIClient(SENDGRID_API_KEY)
+        sg.send(message)
+    except Exception as e:
+        print(e.message)

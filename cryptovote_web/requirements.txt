@@ -10,3 +10,4 @@ flask_migrate
 flask-login
 webauthn
 uuid
+sendgrid

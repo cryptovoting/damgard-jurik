@@ -2,7 +2,6 @@
 from flask import Blueprint, render_template
 from flask_login import login_required
 from ..helpers import election_exists
-from ..models import Election
 
 blueprint = Blueprint('election', __name__)
 
@@ -35,6 +34,7 @@ def authority_list(election):
 @election_exists
 def results(election):
     return render_template('election/results.html', election=election)
+
 
 @blueprint.route('/manage', subdomain='<election>')
 @login_required
