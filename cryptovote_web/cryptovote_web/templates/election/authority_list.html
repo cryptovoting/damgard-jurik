@@ -1,15 +1,15 @@
 {% extends "layouts/election_layout.html" %}
 
 {% block header %}
-<title>{{ election.name | title }} | Voters</title>
+<title>{{ election.name | title }} | Authorities</title>
 {% endblock %}
 
 {% block content %}
 <section class="portfolio-block contact">
     <div class="container">
         <div class="heading">
-          <h1>Voter List</h1>
-          <h4>The following voters are able to cast ballots in the election.</h4>
+          <h1>Authority List</h1>
+          <h4>The following authorities are running the election.</h4>
         </div>
         <table class="table table-hover">
           <thead>
@@ -20,11 +20,11 @@
             </tr>
           </thead>
           <tbody>
-            {% for voter in election.voters %}
+            {% for authority in election.authorities %}
               <tr>
                 <th scope="row">{{ loop.index }}</th>
-                <td>{{ voter.name }}</td>
-                <td>{{ voter.email }}</td>
+                <td>{{ authority.name }}</td>
+                <td>{{ authority.email }}</td>
               </tr>
             {% endfor %}
           </tbody>
