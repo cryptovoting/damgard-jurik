@@ -9,3 +9,4 @@ python-dotenv
 flask_migrate
 flask-login
 webauthn
+uuid

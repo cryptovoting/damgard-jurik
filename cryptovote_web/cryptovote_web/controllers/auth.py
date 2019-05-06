@@ -1,11 +1,11 @@
 import os
 import webauthn
 from flask import jsonify, make_response, redirect, request, session, url_for, Blueprint
-from flask_login import login_required, login_user, logout_user
+from flask_login import login_required, login_user, logout_user, current_user
 from ..helpers import generate_challenge, generate_ukey
-from ..models import Authority, Voter, Election
+from ..models import Authority, Election
 from ..settings import SERVER_NAME
-from ..extensions import db
+from ..extensions import db, login_manager
 
 blueprint = Blueprint('auth', __name__)
 
@@ -15,6 +15,11 @@ RP_ID = SERVER_NAME.split(':')[0]
 # Trust anchors (trusted attestation roots) should be
 # placed in TRUST_ANCHOR_DIR.
 TRUST_ANCHOR_DIR = '../trusted_attestation_roots'
+
+
+@login_manager.user_loader
+def load_user(email):
+    return Authority.filter_by(email=email).first()
 
 
 @blueprint.route('/webauthn_begin_activate', subdomain='<election>', methods=['POST'])
@@ -122,6 +127,10 @@ def verify_credential_info(election):
                 'fail': 'Credential ID already exists.'
             }), 401)
 
+    if not current_user.is_authenticated:
+        if Election.query.filter_by(name=election).first():
+            return make_response(jsonify({'fail': 'Attempted to create initial authority for existing election.'}), 401)
+
     existing_user = Authority.query.filter(
         Election.name == election, Authority.email == email).first()
     if not existing_user:
@@ -140,6 +149,7 @@ def verify_credential_info(election):
             sign_count=webauthn_credential.sign_count,
             rp_id=RP_ID,
             icon_url=origin)
+        db.session.add(election_data)
         db.session.add(user)
         db.session.commit()
     else:
