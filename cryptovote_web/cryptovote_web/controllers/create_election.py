@@ -1,6 +1,8 @@
 import re
 from flask import Blueprint, render_template, request, session, flash, redirect, url_for
-from ..models import Election
+from ..models import Election, UnconfirmedAuthority, Authority
+from ..helpers import send_authority_confirm_email
+from ..extensions import db
 
 blueprint = Blueprint('create_election', __name__)
 
@@ -64,14 +66,47 @@ def verify_email():
             return render_template('create_election/verify_email.html')
         session['email'] = email
 
-        # Create the election in the database
         if Election.query.filter_by(name=session['election']).first():
             flash(f"Election \'{session['election']}\' already exists.")
             return redirect(url_for('create_election.create_election_name'))
-        return redirect(url_for('create_election.register_identity',
-                                election=session['election']))
+        # Confirm email address
+        user = UnconfirmedAuthority(election_name=session['election'],
+                                    name=session['name'],
+                                    email=session['email'])
+        db.session.add(user)
+        db.session.commit()
+        send_authority_confirm_email(user, request.url_root)
+        return render_template('create_election/check_email.html')
+
+
+@blueprint.route('/confirm-email')
+def confirm_email():
+    if 'k' not in request.args:
+        print("Missing k")
+        return redirect(url_for('home.index'))
+    user = UnconfirmedAuthority.query.filter_by(email_key=request.args['k']).first()
+    if not user:
+        return redirect(url_for('home.index'))
+    if Authority.query.filter(Election.name == user.election_name, Authority.email == user.email).first():
+        return redirect(url_for('election.election_home', election=user.election_name))
+    session['election'] = user.election_name
+    session['email'] = user.email
+    session['name'] = user.name
+    session['k'] = user.email_key
+    return redirect(url_for('create_election.register_identity', election=user.election_name))
 
 
 @blueprint.route('/setup', subdomain='<election>')
 def register_identity(election):
+    for key in ['election', 'name', 'email', 'k']:
+        if key not in session:
+            return redirect(url_for('home.index'))
+    user = UnconfirmedAuthority.query.filter_by(email_key=session['k']).first()
+    if not user:
+        return redirect(url_for('home.index'))
+    if Authority.query.filter(Election.name == user.election_name, Authority.email == user.email).first():
+        return redirect(url_for('election.election_home', election=user.election_name))
+    session['election'] = user.election_name
+    session['email'] = user.email
+    session['name'] = user.name
     return render_template('create_election/register_identity.html')

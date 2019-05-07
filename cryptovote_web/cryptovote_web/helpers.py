@@ -54,7 +54,7 @@ def send_voter_email(voter):
     election = title(voter.election.name)
     message = Mail(
         from_email=f"Cryptovote <{voter.election.name}@{SENDGRID_FROM_DOMAIN}>",
-        to_emails=f"{voter.name} <{voter.email}>",
+        to_emails=f"<{voter.email}>",
         subject=f'Vote in {election}',
         html_content=f'Your secret key is: {voter.email_key}')
     try:
@@ -64,13 +64,18 @@ def send_voter_email(voter):
         print(e.message)
 
 
-def send_authority_email(authority):
-    election = title(authority.election.name)
+def send_authority_confirm_email(authority, url):
+    election = title(authority.election_name)
     message = Mail(
-        from_email=f"Cryptovote <{authority.election.name}@{SENDGRID_FROM_DOMAIN}>",
+        from_email=f"Cryptovote <{authority.election_name}@{SENDGRID_FROM_DOMAIN}>",
         to_emails=f"{authority.name} <{authority.email}>",
-        subject=f'Invitation to Administer {election}',
-        html_content=f'Your secret key is: {authority.email_key}')
+        subject=f'Confirm Your Email for {election}',
+        html_content=f"""
+                        <h1>Confirm Email</h1>
+                        <p>Please confirm your email for {election} on
+                        Cryptovote by clicking
+                        <a href="{url}confirm-email?k={authority.email_key}">here</a>.
+                        """)
     try:
         sg = SendGridAPIClient(SENDGRID_API_KEY)
         sg.send(message)
