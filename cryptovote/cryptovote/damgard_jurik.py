@@ -23,10 +23,10 @@ class EncryptedNumber:
 
     def __add__(self, other: Any) -> 'EncryptedNumber':
         if not isinstance(other, EncryptedNumber):
-            raise ValueError('Can only add an EncryptedNumber to another EncryptedNumber')
+            raise ValueError('Can only add/subtract an EncryptedNumber to another EncryptedNumber')
 
         if self.public_key != other.public_key:
-            raise ValueError("Attempted to add numbers encrypted against different public keys!")
+            raise ValueError("Attempted to add/subtract numbers encrypted against different public keys!")
 
         return EncryptedNumber(
             public_key=self.public_key,
@@ -35,6 +35,24 @@ class EncryptedNumber:
 
     def __radd__(self, other: Any) -> 'EncryptedNumber':
         return self.__add__(other)
+
+    def __sub__(self, other: Any) -> 'EncryptedNumber':
+        if not isinstance(other, EncryptedNumber):
+            raise ValueError('Can only add/subtract an EncryptedNumber from another EncryptedNumber')
+
+        if self.public_key != other.public_key:
+            raise ValueError("Attempted to add/subtract numbers encrypted against different public keys!")
+
+        # Multiply other by -1 via inv_mod
+        other_inv = EncryptedNumber(other.public_key, inv_mod(other.value, other.public_key.n_s_1))
+
+        return self.__add__(other_inv)
+
+    def __rsub__(self, other: Any) -> 'EncryptedNumber':
+        # Multiply self by -1 via inv_mod
+        self_inv = EncryptedNumber(self.public_key, inv_mod(self.value, self.public_key.n_s_1))
+
+        return self_inv.__add__(other)
 
     def __mul__(self, other: int) -> 'EncryptedNumber':
         if not isinstance(other, int):
@@ -93,9 +111,9 @@ class PrivateKeyShare:
 
 
 def keygen(n_bits: int = 2048,
-           s: int = 4,
-           threshold: int = 9,
-           n_shares: int = 16) -> Tuple[PublicKey, List[PrivateKeyShare]]:
+           s: int = 3,
+           threshold: int = 5,
+           n_shares: int = 9) -> Tuple[PublicKey, List[PrivateKeyShare]]:
     """ Generates a PublicKey and a list of PrivateKeyShares using Damgard-Jurik threshold variant."""
     # Find n = p * q and m = p_prime * q_prime where p = 2 * p_prime + 1 and q = 2 * q_prime + 1
     p, q = gen_safe_prime_pair(n_bits)
@@ -108,9 +126,6 @@ def keygen(n_bits: int = 2048,
 
     # Find d such that d = 0 mod m and d = 1 mod n^s
     d = crm(a_list=[0, 1], n_list=[m, n_s])
-    # TODO: should it be mod m or mod lambda = lcm(p-1,q-1)
-    # from cryptovote.utils import lcm
-    # d = crm(a_list=[0, 1], n_list=[lcm(p - 1, q - 1), n_s])
 
     # Use Shamir secret sharing to share_secret d
     shares = share_secret(

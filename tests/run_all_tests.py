@@ -1,3 +1,11 @@
+#!/usr/bin/env python3
+"""
+test.py
+Boucher, Govedič, Saowakon, Swanson 2019
+
+Runs all unit tests.
+
+"""
 import unittest
 
 if __name__ == "__main__":

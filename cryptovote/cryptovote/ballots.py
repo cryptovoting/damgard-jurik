@@ -15,7 +15,7 @@ from abc import ABC
 from typing import List
 from secrets import randbelow
 
-from cryptovote.crypto import EncryptedNumber, PrivateKey, PublicKey
+from cryptovote.damgard_jurik import EncryptedNumber, PrivateKeyShare, PublicKey, threshold_decrypt
 
 
 class Ballot(ABC):
@@ -45,7 +45,10 @@ class PreferenceOrderBallot(Ballot):
     """ The voter orders the candidades by preference.
         Preferences are known, candidates are hidden. """
 
-    def __init__(self, candidates: List[EncryptedNumber], preferences: List[int], weight: EncryptedNumber):
+    def __init__(self,
+                 candidates: List[EncryptedNumber],
+                 preferences: List[int],
+                 weight: EncryptedNumber):
         self.candidates = candidates
         self.preferences = preferences
         self.weight = weight
@@ -53,7 +56,10 @@ class PreferenceOrderBallot(Ballot):
 
 class FirstPreferenceBallot(Ballot):
     """ Ballot in candidate order with encrypted weight for each candidate. """
-    def __init__(self, candidates: List[int], preferences: List[EncryptedNumber], weights: List[EncryptedNumber]):
+    def __init__(self,
+                 candidates: List[int],
+                 preferences: List[EncryptedNumber],
+                 weights: List[EncryptedNumber]):
         self.candidates = candidates
         self.preferences = preferences
         self.weights = weights
@@ -63,12 +69,17 @@ class CandidateOrderBallot(Ballot):
     """ The voter orders the canditades by preference.
         Preferences are hidden, candidates are known. """
 
-    def __init__(self, candidates: List[int], preferences: List[EncryptedNumber], weight: EncryptedNumber):
+    def __init__(self,
+                 candidates: List[int],
+                 preferences: List[EncryptedNumber],
+                 weight: EncryptedNumber):
         self.candidates = candidates
         self.preferences = preferences
         self.weight = weight
 
-    def to_first_preference(self, private_key: PrivateKey, public_key: PublicKey) -> FirstPreferenceBallot:
+    def to_first_preference(self,
+                            private_key_shares: List[PrivateKeyShare],
+                            public_key: PublicKey) -> FirstPreferenceBallot:
         """ Converts a candidate order ballot into a first preference ballot. """
         # Initialization
         n = len(self.candidates)
@@ -83,7 +94,7 @@ class CandidateOrderBallot(Ballot):
         candidates, preferences = self.shuffle(candidates, preferences)
 
         # Step 3: Threshold decrypt the preference row
-        preferences = [private_key.decrypt(preference) for preference in preferences]
+        preferences = [threshold_decrypt(preference, private_key_shares) for preference in preferences]
 
         # Step 4: Sort columns in preference order
         tmp = [(preferences[i], candidates[i]) for i in range(n)]
@@ -100,7 +111,7 @@ class CandidateOrderBallot(Ballot):
         # Step 7: Shuffle the table columns
         candidates, preferences, weights = self.shuffle(candidates, preferences, weights)
         # Step 8: Threshold decrypt the candidate row
-        candidates = [private_key.decrypt(candidate) for candidate in candidates]
+        candidates = [threshold_decrypt(candidate, private_key_shares) for candidate in candidates]
         # Step 9: Sort columns in candidate order
         tmp = [(candidates[i], preferences[i], weights[i]) for i in range(n)]
         tmp.sort()
@@ -110,7 +121,9 @@ class CandidateOrderBallot(Ballot):
         # Return the result
         return FirstPreferenceBallot(candidates, preferences, weights)
 
-    def to_candidate_elimination(self, eliminated: List[int], private_key: PrivateKey,
+    def to_candidate_elimination(self,
+                                 eliminated: List[int],
+                                 private_key_shares: List[PrivateKeyShare],
                                  public_key: PublicKey, ) -> 'CandidateEliminationBallot':
         """ Converts a candidate order ballot into a candidate elimination ballot.
             Assumes eliminated is a list of either 0 or 1, *unencrypted*. """
@@ -126,7 +139,7 @@ class CandidateOrderBallot(Ballot):
         # Step 3: Shuffle the table columns
         candidates, preferences, eliminated = self.shuffle(candidates, preferences, eliminated)
         # Step 4: Threshold decrypt the preference row
-        preferences = [private_key.decrypt(preference) for preference in preferences]
+        preferences = [threshold_decrypt(preference, private_key_shares) for preference in preferences]
         # Step 5: Sort the table columns by preference
         tmp = [(preferences[i], candidates[i], eliminated[i]) for i in range(n)]
         tmp.sort()
@@ -150,7 +163,7 @@ class CandidateEliminationBallot(Ballot):
         self.eliminated = eliminated
         self.weight = weight
 
-    def to_candidate_order(self, private_key: PrivateKey, public_key: PublicKey) -> CandidateOrderBallot:
+    def to_candidate_order(self, private_key_shares: List[PrivateKeyShare]) -> CandidateOrderBallot:
         """ Converts a candidate elimination ballot into a candidate order ballot. """
         # Initialization
         n = len(self.candidates)
@@ -161,7 +174,7 @@ class CandidateEliminationBallot(Ballot):
         # Step 1: Shuffle the table columns
         candidates, preferences, eliminated = self.shuffle(candidates, preferences, eliminated)
         # Step 2: Threshold decrypt the candidate row
-        candidates = [private_key.decrypt(candidate) for candidate in candidates]
+        candidates = [threshold_decrypt(candidate, private_key_shares) for candidate in candidates]
         # Step 3: Sort the table columns by candidate
         tmp = [(candidates[i], preferences[i], eliminated[i]) for i in range(n)]
         tmp.sort()

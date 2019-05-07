@@ -1,101 +1,110 @@
+#!/usr/bin/env python3
+"""
+test.py
+Boucher, Govedič, Saowakon, Swanson 2019
+
+Unit tests for protocols.
+
+"""
+from typing import List
 import unittest
 
-from cryptovote import CandidateOrderBallot, PrivateKey, PublicKey, eliminate_candidate_set, \
-    compute_first_preference_tallies, FirstPreferenceBallot, reweigh_votes
-from phe import generate_paillier_keypair
+from cryptovote.ballots import CandidateOrderBallot, FirstPreferenceBallot
+from cryptovote.protocols import compute_first_preference_tallies, eliminate_candidate_set, reweigh_votes
+from cryptovote.damgard_jurik import EncryptedNumber, keygen, PrivateKeyShare, PublicKey, threshold_decrypt
 
 
-def decrypt_list(l, private_key: PrivateKey):
-    return [private_key.decrypt(x) for x in l]
+def decrypt_list(l: List[EncryptedNumber], private_key_shares: List[PrivateKeyShare]) -> List[int]:
+    return [threshold_decrypt(x, private_key_shares) for x in l]
 
 
-def encrypt_list(l, public_key: PublicKey):
+def encrypt_list(l: List[int], public_key: PublicKey) -> List[EncryptedNumber]:
     return [public_key.encrypt(x) for x in l]
 
 
 class TestEliminateCandidateSet(unittest.TestCase):
     def test_01(self):
         """The test from the paper"""
-        public_key, private_key = generate_paillier_keypair()
+        public_key, private_key_shares = keygen(n_bits=64, s=3, threshold=5, n_shares=9)
 
         candidates = [1, 2, 3]
 
         ballots = [
-            CandidateOrderBallot(candidates, encrypt_list([3, 1, 2], public_key), public_key.encrypt(0.8))
+            CandidateOrderBallot(candidates, encrypt_list([3, 1, 2], public_key), public_key.encrypt(8))
         ]
         for_elimination = [3]
-        eliminated = eliminate_candidate_set(for_elimination, ballots, private_key, public_key)
+        eliminated = eliminate_candidate_set(for_elimination, ballots, private_key_shares, public_key)
 
         self.assertEqual(len(ballots), len(eliminated), "The number of ballots must stay the same after elimination")
 
         self.assertListEqual([1, 2], eliminated[0].candidates, "The remaining candidates must be the not eliminated")
 
-        self.assertListEqual([2, 1], decrypt_list(eliminated[0].preferences, private_key), "Preferences must be right")
+        self.assertListEqual([2, 1], decrypt_list(eliminated[0].preferences, private_key_shares), "Preferences must be right")
 
-        self.assertEqual(0.8, private_key.decrypt(eliminated[0].weight), "Weight must be right")
+        self.assertEqual(8, threshold_decrypt(eliminated[0].weight, private_key_shares), "Weight must be right")
 
     def test_02(self):
-        public_key, private_key = generate_paillier_keypair()
+        public_key, private_key_shares = keygen(n_bits=64, s=3, threshold=5, n_shares=9)
 
         candidates = [0, 1, 2, 3, 4, 5]
 
         ballots = [
-            CandidateOrderBallot(candidates, encrypt_list([0, 3, 4, 2, 1, 5], public_key), public_key.encrypt(0.8)),
-            CandidateOrderBallot(candidates, encrypt_list([4, 2, 3, 5, 0, 1], public_key), public_key.encrypt(0.4)),
+            CandidateOrderBallot(candidates, encrypt_list([0, 3, 4, 2, 1, 5], public_key), public_key.encrypt(8)),
+            CandidateOrderBallot(candidates, encrypt_list([4, 2, 3, 5, 0, 1], public_key), public_key.encrypt(4)),
 
         ]
         for_elimination = [0, 3, 4]
-        eliminated = eliminate_candidate_set(for_elimination, ballots, private_key, public_key)
+        eliminated = eliminate_candidate_set(for_elimination, ballots, private_key_shares, public_key)
 
         self.assertEqual(len(ballots), len(eliminated), "The number of ballots must stay the same after elimination")
 
         self.assertListEqual([1, 2, 5], eliminated[0].candidates, "The remaining candidates must be the not eliminated")
         self.assertListEqual([1, 2, 5], eliminated[1].candidates, "The remaining candidates must be the not eliminated")
 
-        self.assertListEqual([0, 1, 2], decrypt_list(eliminated[0].preferences, private_key),
+        self.assertListEqual([0, 1, 2], decrypt_list(eliminated[0].preferences, private_key_shares),
                              "Preferences must be right")
-        self.assertListEqual([1, 2, 0], decrypt_list(eliminated[1].preferences, private_key),
+        self.assertListEqual([1, 2, 0], decrypt_list(eliminated[1].preferences, private_key_shares),
                              "Preferences must be right")
 
-        self.assertEqual(0.8, private_key.decrypt(eliminated[0].weight), "Weight must be right")
-        self.assertEqual(0.4, private_key.decrypt(eliminated[1].weight), "Weight must be right")
+        self.assertEqual(8, threshold_decrypt(eliminated[0].weight, private_key_shares), "Weight must be right")
+        self.assertEqual(4, threshold_decrypt(eliminated[1].weight, private_key_shares), "Weight must be right")
 
 
 class TestComputeFirstPreferenceTallies(unittest.TestCase):
     def test_01(self):
         """Test from the paper"""
-        public_key, private_key = generate_paillier_keypair()
+        public_key, private_key_shares = keygen(n_bits=64, s=3, threshold=5, n_shares=9)
 
         candidates = [1, 2, 3]
         ballots = [
-            CandidateOrderBallot(candidates, encrypt_list([3, 1, 2], public_key), public_key.encrypt(1.0))
+            CandidateOrderBallot(candidates, encrypt_list([3, 1, 2], public_key), public_key.encrypt(1))
         ]
 
-        fpb, tallies = compute_first_preference_tallies(ballots, private_key, public_key)
+        fpb, tallies = compute_first_preference_tallies(ballots, private_key_shares, public_key)
 
         self.assertListEqual([0, 1, 0], tallies, "The right tally counts")
 
         self.assertEqual(1, len(fpb), "The number of ballots must stay the same after computation")
 
         self.assertListEqual(candidates, fpb[0].candidates, "The right candidates")
-        self.assertListEqual([0, 1, 0], decrypt_list(fpb[0].weights, private_key),
+        self.assertListEqual([0, 1, 0], decrypt_list(fpb[0].weights, private_key_shares),
                              "Weight 1.0 for first preference, 0 otherwise")
 
     def test_02(self):
-        public_key, private_key = generate_paillier_keypair()
+        public_key, private_key_shares = keygen(n_bits=64, s=3, threshold=5, n_shares=9)
 
         candidates = [0, 1, 2, 3, 4, 5]
 
         ballots = [
-            CandidateOrderBallot(candidates, encrypt_list([0, 3, 4, 2, 1, 5], public_key), public_key.encrypt(0.8)),
-            CandidateOrderBallot(candidates, encrypt_list([4, 2, 3, 5, 0, 1], public_key), public_key.encrypt(1.0)),
-            CandidateOrderBallot(candidates, encrypt_list([5, 3, 0, 4, 2, 1], public_key), public_key.encrypt(1.0)),
-            CandidateOrderBallot(candidates, encrypt_list([3, 2, 4, 5, 0, 1], public_key), public_key.encrypt(0.25)),
-            CandidateOrderBallot(candidates, encrypt_list([2, 4, 3, 0, 1, 5], public_key), public_key.encrypt(0.25)),
+            CandidateOrderBallot(candidates, encrypt_list([0, 3, 4, 2, 1, 5], public_key), public_key.encrypt(80)),
+            CandidateOrderBallot(candidates, encrypt_list([4, 2, 3, 5, 0, 1], public_key), public_key.encrypt(100)),
+            CandidateOrderBallot(candidates, encrypt_list([5, 3, 0, 4, 2, 1], public_key), public_key.encrypt(100)),
+            CandidateOrderBallot(candidates, encrypt_list([3, 2, 4, 5, 0, 1], public_key), public_key.encrypt(25)),
+            CandidateOrderBallot(candidates, encrypt_list([2, 4, 3, 0, 1, 5], public_key), public_key.encrypt(25)),
         ]
-        expected_tallies = [0.8, 0, 1, 0.25, 1.25, 0]
+        expected_tallies = [80, 0, 100, 25, 125, 0]
 
-        fpb, tallies = compute_first_preference_tallies(ballots, private_key, public_key)
+        fpb, tallies = compute_first_preference_tallies(ballots, private_key_shares, public_key)
 
         self.assertListEqual(expected_tallies, tallies, "The right tally counts")
 
@@ -104,13 +113,13 @@ class TestComputeFirstPreferenceTallies(unittest.TestCase):
         for i in range(len(ballots)):
             self.assertListEqual(candidates, fpb[i].candidates, "The right candidates")
 
-        self.assertListEqual([0.8, 0, 0, 0, 0, 0], decrypt_list(fpb[0].weights, private_key),
+        self.assertListEqual([80, 0, 0, 0, 0, 0], decrypt_list(fpb[0].weights, private_key_shares),
                              "Full weight for first preference, 0 otherwise")
-        self.assertListEqual([0, 0, 0, 0, 1, 0], decrypt_list(fpb[1].weights, private_key),
+        self.assertListEqual([0, 0, 0, 0, 100, 0], decrypt_list(fpb[1].weights, private_key_shares),
                              "Full weight for first preference, 0 otherwise")
 
     def test_03(self):
-        public_key, private_key = generate_paillier_keypair()
+        public_key, private_key_shares = keygen(n_bits=64, s=3, threshold=5, n_shares=9)
 
         candidates = [0, 1, 2, 3, 4, 5]
 
@@ -123,7 +132,7 @@ class TestComputeFirstPreferenceTallies(unittest.TestCase):
         ]
         expected_tallies = [8, 0, 10, 2, 12, 0]
 
-        fpb, tallies = compute_first_preference_tallies(ballots, private_key, public_key)
+        fpb, tallies = compute_first_preference_tallies(ballots, private_key_shares, public_key)
 
         self.assertListEqual(expected_tallies, tallies, "The right tally counts")
 
@@ -132,16 +141,17 @@ class TestComputeFirstPreferenceTallies(unittest.TestCase):
         for i in range(len(ballots)):
             self.assertListEqual(candidates, fpb[i].candidates, "The right candidates")
 
-        self.assertListEqual([8, 0, 0, 0, 0, 0], decrypt_list(fpb[0].weights, private_key),
+        self.assertListEqual([8, 0, 0, 0, 0, 0], decrypt_list(fpb[0].weights, private_key_shares),
                              "Full weight for first preference, 0 otherwise")
-        self.assertListEqual([0, 0, 0, 0, 10, 0], decrypt_list(fpb[1].weights, private_key),
+        self.assertListEqual([0, 0, 0, 0, 10, 0], decrypt_list(fpb[1].weights, private_key_shares),
                              "Full weight for first preference, 0 otherwise")
 
 
 class TestReweighVotes(unittest.TestCase):
     def test_01(self):
         """Same as TestComputeFirstPreferenceTallies::test_03"""
-        public_key, private_key = generate_paillier_keypair()
+        public_key, private_key_shares = keygen(n_bits=64, s=3, threshold=5, n_shares=9)
+
         candidates = [0, 1, 2, 3, 4, 5]
 
         ballots = [
@@ -160,7 +170,7 @@ class TestReweighVotes(unittest.TestCase):
         tallies = [8, 0, 10, 2, 12, 0]
         q = 5
         elected = [0, 2, 4]
-        cobs, d_lcm = reweigh_votes(ballots, elected, q, tallies, private_key, public_key)
+        cobs, d_lcm = reweigh_votes(ballots, elected, q, tallies, public_key)
 
         self.assertEqual(120, d_lcm, "The right lowest common multiple")
         self.assertEqual(len(ballots), len(cobs), "The number of ballots must stay the same after computation")
@@ -171,14 +181,15 @@ class TestReweighVotes(unittest.TestCase):
         # first preference in that ballot
         expected_weights = [8 * cand_f[0], 10 * cand_f[4], 10 * cand_f[2], 2 * cand_f[4], 2 * cand_f[3]]
 
-        self.assertEqual(expected_weights, [private_key.decrypt(cob.weight) for cob in cobs], "Weights must be right")
+        self.assertEqual(expected_weights, [threshold_decrypt(cob.weight, private_key_shares) for cob in cobs], "Weights must be right")
         for i in range(len(ballots)):
             self.assertListEqual(candidates, cobs[i].candidates, "The right candidates")
-            self.assertListEqual(decrypt_list(ballots[i].preferences, private_key),
-                                 decrypt_list(cobs[i].preferences, private_key), "The right preferences")
+            self.assertListEqual(decrypt_list(ballots[i].preferences, private_key_shares),
+                                 decrypt_list(cobs[i].preferences, private_key_shares), "The right preferences")
 
     def test_02(self):
-        public_key, private_key = generate_paillier_keypair()
+        public_key, private_key_shares = keygen(n_bits=64, s=3, threshold=5, n_shares=9)
+
         candidates = list(range(10))
         preferences = [
             [6, 8, 3, 2, 0, 9, 1, 4, 7, 5],
@@ -289,7 +300,7 @@ class TestReweighVotes(unittest.TestCase):
 
         q = 12
         elected = [0, 6, 8]
-        cobs, d_lcm = reweigh_votes(ballots, elected, q, tallies, private_key, public_key)
+        cobs, d_lcm = reweigh_votes(ballots, elected, q, tallies, public_key)
 
         self.assertEqual(84, d_lcm, "The right lowest common multiple")
         self.assertEqual(len(ballots), len(cobs), "The number of ballots must stay the same after computation")
@@ -300,8 +311,12 @@ class TestReweighVotes(unittest.TestCase):
         # for the candidate that was the first preference in that ballot
         expected_weights = [cand_f[prefs.index(0)] for prefs in preferences]
 
-        self.assertEqual(expected_weights, [private_key.decrypt(cob.weight) for cob in cobs], "Weights must be right")
+        self.assertEqual(expected_weights, [threshold_decrypt(cob.weight, private_key_shares) for cob in cobs], "Weights must be right")
         for i in range(len(ballots)):
             self.assertListEqual(candidates, cobs[i].candidates, "The right candidates")
             self.assertListEqual(preferences[i],
-                                 decrypt_list(cobs[i].preferences, private_key), "The right preferences")
+                                 decrypt_list(cobs[i].preferences, private_key_shares), "The right preferences")
+
+
+if __name__ == '__main__':
+    unittest.main(verbosity=3)

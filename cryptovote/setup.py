@@ -14,7 +14,6 @@ setuptools.setup(
     packages=setuptools.find_packages(),
     install_requires=[
         'gmpy2',
-        'phe',
         'tqdm'
     ],
     classifiers=[
