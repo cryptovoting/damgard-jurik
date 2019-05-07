@@ -10,18 +10,13 @@ for use with Shuffle Sum STV vote tallying.
 """
 from argparse import ArgumentParser
 from collections import defaultdict
+from typing import List
 
 from tqdm import tqdm
 
 from cryptovote.ballots import CandidateOrderBallot
-#from cryptovote.damgard_jurik import keygen, PublicKey
-from cryptovote.crypto import keygen, PublicKey
-
-from cryptovote.crypto import PrivateKey
-
+from cryptovote.damgard_jurik import keygen, PublicKey, PrivateKeyShare, threshold_decrypt
 from cryptovote.protocols import stv_tally
-
-from typing import List
 
 
 def load_ballot_data(master_lookup_path: str,
@@ -163,7 +158,11 @@ def load_ballot_data(master_lookup_path: str,
 
     return contest_id_to_contest
 
-def fake_tally(ballots: List[CandidateOrderBallot], seats: int, stop_candidate: int, private_key: PrivateKey, public_key: PublicKey) -> List[int]:
+
+def fake_tally(ballots: List[CandidateOrderBallot],
+               seats: int,
+               stop_candidate: int,
+               private_key_shares: List[PrivateKeyShare]) -> List[int]:
     """ The main protocol of the ShuffleSum voting algorithm.
         Assumes there is at least one ballot.
         Returns a list of elected candidates. """
@@ -175,7 +174,7 @@ def fake_tally(ballots: List[CandidateOrderBallot], seats: int, stop_candidate: 
     offset = 1 if stop_candidate in c_rem else 0
     decrypted_ballots = []
     for ballot in ballots:
-        decrypted_ballots.append([ballot.candidates, [private_key.decrypt(preference) for preference in ballot.preferences], private_key.decrypt(ballot.weight)])
+        decrypted_ballots.append([ballot.candidates, [threshold_decrypt(preference, private_key_shares) for preference in ballot.preferences], threshold_decrypt(ballot.weight, private_key_shares)])
     while len(c_rem)-offset > seats:
         print("Computing FPT...")
         t = [0 for i in range(len(c_rem))]
@@ -220,7 +219,7 @@ def fake_tally(ballots: List[CandidateOrderBallot], seats: int, stop_candidate: 
             for j in range(len(c_rem)):
                 if c_rem[j] == stop_candidate:
                     continue
-                if i == None or t[j] < t[i]:
+                if i is None or t[j] < t[i]:
                     i = j
             print("Eliminating set...", i, c_rem[i])
             to_eliminate = [c_rem[i]]
@@ -247,8 +246,7 @@ if __name__ == '__main__':
                         help='Path to a .txt file containing a ballot image')
     args = parser.parse_args()
 
-    #public_key, private_key_shares = keygen(n_bits=32, s=3, threshold=4, n_shares=10)
-    public_key, private_key = keygen(n_bits=256)
+    public_key, private_key_shares = keygen(n_bits=32, s=3, threshold=4, n_shares=10)
 
     contest_id_to_contest = load_ballot_data(
         master_lookup_path=args.master_lookup,
@@ -258,28 +256,46 @@ if __name__ == '__main__':
 
     # Uncomment the following to simulate the election straightforwardly
 
-    """
+    import time
+
     for contest_id in contest_id_to_contest:
-        print("Processing ", contest_id)
+        start = time.time()
+        print(f'Processing contest id = {contest_id}')
+
         contest = contest_id_to_contest[contest_id]
-        C = len(contest['candidate_id_to_candidate_name'])
-        print("C:", C)
-        result = fake_tally(contest['ballots'], C//2, contest['stop_candidate_id'], private_key, public_key)
+        num_candidates = len(contest['candidate_id_to_candidate_name'])
+        print(f'Number of candidates = {num_candidates}')
+
+        result = fake_tally(contest['ballots'], num_candidates // 2, contest['stop_candidate_id'], private_key_shares)
+
+        print('Result')
         print(result)
+
+        print('Elected candidates')
         for elected in result:
             print(contest['candidate_id_to_candidate_name'][elected])
-    """
+
+        print(f'Time = {time.time() - start}')
+        print()
 
     # Uncomment the following to simulate the election with ShuffleSum
 
-    """
     for contest_id in contest_id_to_contest:
-        print("Processing ", contest_id)
+        start = time.time()
+        print(f'Processing contest id = {contest_id}')
+
         contest = contest_id_to_contest[contest_id]
-        C = len(contest['candidate_id_to_candidate_name'])
-        print("C:", C)
-        result = stv_tally(contest['ballots'], C//2, contest['stop_candidate_id'], private_key, public_key)
+        num_candidates = len(contest['candidate_id_to_candidate_name'])
+        print(f'Number of candidates = {num_candidates}')
+
+        result = stv_tally(contest['ballots'], num_candidates // 2, contest['stop_candidate_id'], private_key_shares, public_key)
+
+        print('Result')
         print(result)
+
+        print('Elected candidates')
         for elected in result:
             print(contest['candidate_id_to_candidate_name'][elected])
-    """
+
+        print(f'Time = {time.time() - start}')
+        print()
