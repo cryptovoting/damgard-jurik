@@ -103,21 +103,25 @@ class CandidateOrderBallot(Ballot):
         candidates = [tmp[i][1] for i in range(n)]
 
         # Step 5: Add a weights row
-        weights = [public_key.encrypt(0) for i in range(n)]
+        weights = [public_key.encrypt(0) for _ in range(n)]
         weights[0] = weight
 
         # Step 6: Encrypt the preference row
         preferences = [public_key.encrypt(preference) for preference in preferences]
+
         # Step 7: Shuffle the table columns
         candidates, preferences, weights = self.shuffle(candidates, preferences, weights)
+
         # Step 8: Threshold decrypt the candidate row
         candidates = [threshold_decrypt(candidate, private_key_shares) for candidate in candidates]
+
         # Step 9: Sort columns in candidate order
         tmp = [(candidates[i], preferences[i], weights[i]) for i in range(n)]
         tmp.sort()
         candidates = [tmp[i][0] for i in range(n)]
         preferences = [tmp[i][1] for i in range(n)]
         weights = [tmp[i][2] for i in range(n)]
+
         # Return the result
         return FirstPreferenceBallot(candidates, preferences, weights)
 
@@ -132,22 +136,29 @@ class CandidateOrderBallot(Ballot):
         candidates = self.candidates
         preferences = self.preferences
         weight = self.weight
+
         # Step 1: Add an elimination-tag row to the ballot
         eliminated = [public_key.encrypt(eliminated[i]) for i in range(n)]
+
         # Step 2: Encrypt the candidate row
         candidates = [public_key.encrypt(candidate) for candidate in candidates]
+
         # Step 3: Shuffle the table columns
         candidates, preferences, eliminated = self.shuffle(candidates, preferences, eliminated)
+
         # Step 4: Threshold decrypt the preference row
         preferences = [threshold_decrypt(preference, private_key_shares) for preference in preferences]
+
         # Step 5: Sort the table columns by preference
         tmp = [(preferences[i], candidates[i], eliminated[i]) for i in range(n)]
         tmp.sort()
         preferences = [tmp[i][0] for i in range(n)]
         candidates = [tmp[i][1] for i in range(n)]
         eliminated = [tmp[i][2] for i in range(n)]
+
         # Step 6: Encrypt the preference row
         preferences = [public_key.encrypt(preference) for preference in preferences]
+
         # Return the result
         return CandidateEliminationBallot(candidates, preferences, eliminated, weight)
 
@@ -171,15 +182,19 @@ class CandidateEliminationBallot(Ballot):
         preferences = self.preferences
         eliminated = self.eliminated
         weight = self.weight
+
         # Step 1: Shuffle the table columns
         candidates, preferences, eliminated = self.shuffle(candidates, preferences, eliminated)
+
         # Step 2: Threshold decrypt the candidate row
         candidates = [threshold_decrypt(candidate, private_key_shares) for candidate in candidates]
+
         # Step 3: Sort the table columns by candidate
         tmp = [(candidates[i], preferences[i], eliminated[i]) for i in range(n)]
         tmp.sort()
         candidates = [tmp[i][0] for i in range(n)]
         preferences = [tmp[i][1] for i in range(n)]
         eliminated = [tmp[i][2] for i in range(n)]
+
         # Return the result
         return CandidateOrderBallot(candidates, preferences, weight)

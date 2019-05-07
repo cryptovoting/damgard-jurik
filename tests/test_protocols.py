@@ -88,7 +88,7 @@ class TestComputeFirstPreferenceTallies(unittest.TestCase):
 
         self.assertListEqual(candidates, fpb[0].candidates, "The right candidates")
         self.assertListEqual([0, 1, 0], decrypt_list(fpb[0].weights, private_key_shares),
-                             "Weight 1.0 for first preference, 0 otherwise")
+                             "Weight 1 for first preference, 0 otherwise")
 
     def test_02(self):
         public_key, private_key_shares = keygen(n_bits=64, s=3, threshold=5, n_shares=9)

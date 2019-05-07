@@ -11,15 +11,17 @@ from math import factorial
 from secrets import randbelow
 from typing import Any, List, Tuple
 
+from gmpy2 import mpz
+
 from cryptovote.prime_gen import gen_safe_prime_pair
 from cryptovote.shamir import share_secret
-from cryptovote.utils import crm, inv_mod, pow_mod
+from cryptovote.utils import int_to_mpz, crm, inv_mod, pow_mod
 
 
 class EncryptedNumber:
     def __init__(self, public_key: 'PublicKey', value: int):
         self.public_key = public_key
-        self.value = value
+        self.value = mpz(value)
 
     def __add__(self, other: Any) -> 'EncryptedNumber':
         if not isinstance(other, EncryptedNumber):
@@ -54,42 +56,41 @@ class EncryptedNumber:
 
         return self_inv.__add__(other)
 
+    @int_to_mpz
     def __mul__(self, other: int) -> 'EncryptedNumber':
-        if not isinstance(other, int):
-            raise ValueError('Can only multiply an EncryptedNumber by an int')
-
         return EncryptedNumber(
             public_key=self.public_key,
             value=pow(self.value, other, self.public_key.n_s_1)
         )
 
-    def __rmul__(self, other: Any) -> 'EncryptedNumber':
+    @int_to_mpz
+    def __rmul__(self, other: int) -> 'EncryptedNumber':
         return self.__mul__(other)
 
-    def __truediv__(self, other: Any):
-        if not isinstance(other, int):
-            raise ValueError('Can only divide an EncryptedNumber by an int')
-
+    @int_to_mpz
+    def __truediv__(self, other: int):
         return self * inv_mod(other, self.public_key.n_s_1)
 
-    def __eq__(self, other):
-        return self.value == other.value
+    def __eq__(self, other: Any):
+        return isinstance(other, EncryptedNumber) and self.value == other.value
 
 
 class PublicKey:
+    @int_to_mpz
     def __init__(self, n: int, s: int, m: int, threshold: int, delta: int):
         self.n = n
         self.s = s
         self.m = m
         self.n_s = self.n ** self.s  # n^s
         self.n_s_1 = self.n_s * self.n  # n^(s+1)
-        self.n_s_m = self.n_s * m  # n^s * m
+        self.n_s_m = self.n_s * self.m  # n^s * m
         self.threshold = threshold
         self.delta = delta
 
+    @int_to_mpz
     def encrypt(self, m: int) -> EncryptedNumber:
         # Choose random r in Z_n^*
-        r = randbelow(self.n - 1) + 1
+        r = mpz(randbelow(self.n - 1)) + 1
         c = pow(self.n + 1, m, self.n_s_1) * pow(r, self.n_s, self.n_s_1) % self.n_s_1
         c = EncryptedNumber(self, c)
 
@@ -97,6 +98,7 @@ class PublicKey:
 
 
 class PrivateKeyShare:
+    @int_to_mpz
     def __init__(self, public_key: PublicKey, i: int, s_i: int, delta: int):
         self.public_key = public_key
         self.i = i
@@ -110,6 +112,7 @@ class PrivateKeyShare:
         return c_i
 
 
+@int_to_mpz
 def keygen(n_bits: int = 2048,
            s: int = 3,
            threshold: int = 5,
@@ -142,27 +145,33 @@ def keygen(n_bits: int = 2048,
 
     return public_key, private_key_shares
 
-
+@int_to_mpz
 def damgard_jurik_reduce(a: int, s: int, n: int) -> int:
     """ Computes i given a = (1 + n)^i (mod n^(s+1))."""
     def L(b: int) -> int:
         assert (b - 1) % n == 0
         return (b - 1) // n
 
-    @lru_cache(s)
+    @lru_cache(int(s))
+    @int_to_mpz
     def n_pow(p: int) -> int:
         return n ** p
 
-    @lru_cache(s)
+    @lru_cache(int(s))
+    @int_to_mpz
     def fact(k: int) -> int:
-        return factorial(k)
+        return mpz(factorial(k))
 
-    i = 0
+    i = mpz(0)
     for j in range(1, s + 1):
+        j = mpz(j)
+
         t_1 = L(a % n_pow(j + 1))
         t_2 = i
 
         for k in range(2, j + 1):
+            k = mpz(k)
+
             i = i - 1
             t_2 = t_2 * i % n_pow(j)
             t_1 = t_1 - (t_2 * n_pow(k - 1) * inv_mod(fact(k), n_pow(j))) % n_pow(j)
@@ -205,6 +214,7 @@ def threshold_decrypt(c: EncryptedNumber, private_key_shares: List[PrivateKeySha
     i_list = [pk.i for pk in private_key_shares]
 
     # Define lambda function
+    @int_to_mpz
     def lam(i: int) -> int:
         S_prime = S - {i}
         l = delta % n_s_m
@@ -213,7 +223,7 @@ def threshold_decrypt(c: EncryptedNumber, private_key_shares: List[PrivateKeySha
         return l
 
     # Decrypt
-    c_prime = 1
+    c_prime = mpz(1)
     for c_i, i in zip(c_list, i_list):
         c_prime = (c_prime * pow_mod(c_i, (2 * lam(i)), n_s_1)) % n_s_1
     

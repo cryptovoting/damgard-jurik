@@ -256,24 +256,46 @@ if __name__ == '__main__':
 
     # Uncomment the following to simulate the election straightforwardly
 
-    # for contest_id in contest_id_to_contest:
-    #     print("Processing ", contest_id)
-    #     contest = contest_id_to_contest[contest_id]
-    #     C = len(contest['candidate_id_to_candidate_name'])
-    #     print("C:", C)
-    #     result = fake_tally(contest['ballots'], C//2, contest['stop_candidate_id'], private_key_shares)
-    #     print(result)
-    #     for elected in result:
-    #         print(contest['candidate_id_to_candidate_name'][elected])
+    import time
+
+    for contest_id in contest_id_to_contest:
+        start = time.time()
+        print(f'Processing contest id = {contest_id}')
+
+        contest = contest_id_to_contest[contest_id]
+        num_candidates = len(contest['candidate_id_to_candidate_name'])
+        print(f'Number of candidates = {num_candidates}')
+
+        result = fake_tally(contest['ballots'], num_candidates // 2, contest['stop_candidate_id'], private_key_shares)
+
+        print('Result')
+        print(result)
+
+        print('Elected candidates')
+        for elected in result:
+            print(contest['candidate_id_to_candidate_name'][elected])
+
+        print(f'Time = {time.time() - start}')
+        print()
 
     # Uncomment the following to simulate the election with ShuffleSum
 
-    # for contest_id in contest_id_to_contest:
-    #     print("Processing ", contest_id)
-    #     contest = contest_id_to_contest[contest_id]
-    #     C = len(contest['candidate_id_to_candidate_name'])
-    #     print("C:", C)
-    #     result = stv_tally(contest['ballots'], C//2, contest['stop_candidate_id'], private_key_shares, public_key)
-    #     print(result)
-    #     for elected in result:
-    #         print(contest['candidate_id_to_candidate_name'][elected])
+    for contest_id in contest_id_to_contest:
+        start = time.time()
+        print(f'Processing contest id = {contest_id}')
+
+        contest = contest_id_to_contest[contest_id]
+        num_candidates = len(contest['candidate_id_to_candidate_name'])
+        print(f'Number of candidates = {num_candidates}')
+
+        result = stv_tally(contest['ballots'], num_candidates // 2, contest['stop_candidate_id'], private_key_shares, public_key)
+
+        print('Result')
+        print(result)
+
+        print('Elected candidates')
+        for elected in result:
+            print(contest['candidate_id_to_candidate_name'][elected])
+
+        print(f'Time = {time.time() - start}')
+        print()

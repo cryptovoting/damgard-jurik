@@ -9,8 +9,6 @@ Unit tests for crypto.
 from secrets import randbelow
 import unittest
 
-from tqdm import trange
-
 from cryptovote.damgard_jurik import keygen, threshold_decrypt
 from cryptovote.prime_gen import gen_prime
 from cryptovote.shamir import Polynomial, reconstruct, share_secret
@@ -41,7 +39,7 @@ class TestShamir(unittest.TestCase):
 
 class TestDamgardJurik(unittest.TestCase):
      def test_encrypt_decrypt(self):
-         for _ in trange(10):
+         for _ in range(10):
              n_bits = randbelow(32) + 16
              s = randbelow(5) + 1
              threshold = randbelow(10) + 1
@@ -62,7 +60,7 @@ class TestDamgardJurikHomomorphic(unittest.TestCase):
         self.public_key, self.private_key_shares = keygen(n_bits=64, s=3, threshold=5, n_shares=9)
 
     def test_homomorphic_add(self):
-        for _ in trange(10):
+        for _ in range(10):
             plaintext_1, plaintext_2 = randbelow(100), randbelow(100)
 
             ciphertext_1, ciphertext_2 = self.public_key.encrypt(plaintext_1), self.public_key.encrypt(plaintext_2)
@@ -74,7 +72,7 @@ class TestDamgardJurikHomomorphic(unittest.TestCase):
             self.assertEqual(plaintext_1 + plaintext_2, decrypted_plaintext)
 
     def test_homomorphic_multiply(self):
-        for _ in trange(10):
+        for _ in range(10):
             plaintext = randbelow(100)
             scalar = randbelow(100)
 
@@ -86,7 +84,7 @@ class TestDamgardJurikHomomorphic(unittest.TestCase):
             self.assertEqual(plaintext * scalar, decrypted_plaintext)
 
     def test_homomorphic_divide(self):
-        for _ in trange(10):
+        for _ in range(10):
             scalar = randbelow(100) + 1
             multiple = randbelow(100) + 1
             plaintext = scalar * multiple
