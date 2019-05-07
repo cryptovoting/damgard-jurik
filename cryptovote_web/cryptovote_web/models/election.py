@@ -13,6 +13,7 @@ class Election(db.Model):
                                   backref=db.backref('election', lazy='joined'),
                                   lazy=True)
     bulletin = db.Column(db.Text, default="")
+    candidates = db.Column(db.Text, default="")
 
     def __init__(self, name):
         self.name = name

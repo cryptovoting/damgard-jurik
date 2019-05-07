@@ -1,7 +1,8 @@
 import re
 from flask import Blueprint, render_template, request, session, flash, redirect, url_for
+from flask_login import login_required
 from ..models import Election, UnconfirmedAuthority, Authority
-from ..helpers import send_authority_confirm_email
+from ..helpers import send_authority_confirm_email, election_exists
 from ..extensions import db
 
 blueprint = Blueprint('create_election', __name__)
@@ -110,3 +111,16 @@ def register_identity(election):
     session['email'] = user.email
     session['name'] = user.name
     return render_template('create_election/register_identity.html')
+
+
+@blueprint.route('/add-candidates', subdomain='<election>', methods=['GET', 'POST'])
+@login_required
+@election_exists
+def add_candidates(election):
+    if request.method == 'GET':
+        return render_template('create_election/add_candidates.html', election=election)
+    else:
+        candidates = request.form.get("candidates", "")
+        election.candidates = candidates
+        db.session.commit()
+        return redirect(url_for('election.register_voters', election=election.name))
