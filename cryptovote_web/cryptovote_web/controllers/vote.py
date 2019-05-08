@@ -54,7 +54,7 @@ def vote(election):
     if voter.ballot:
         flash("Your ballot has already been cast.")
         return redirect(url_for('election.election_home', election=election.name))
-    candidates = election.candidates.split(",")
+    candidates = election.candidates
     shuffle(candidates)
     if request.method == 'GET':
         return render_template('vote/vote.html', election=election, candidates=candidates)

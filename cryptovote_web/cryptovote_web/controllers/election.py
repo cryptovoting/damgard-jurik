@@ -67,5 +67,4 @@ def register_voters(election):
 @blueprint.route('/candidates', subdomain='<election>')
 @election_exists
 def candidates(election):
-    candidates = election.candidates.split(",")
-    return render_template('election/candidates.html', election=election, candidates=candidates)
+    return render_template('election/candidates.html', election=election)
