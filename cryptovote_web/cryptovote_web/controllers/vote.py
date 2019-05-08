@@ -64,6 +64,7 @@ def vote(election):
             flash("No ballot submitted.")
             return render_template('vote/vote.html', election=election, candidates=candidates)
         voter.ballot = ballot
+        election.bulletin += f"{voter.id}: {ballot}\n"
         db.session.commit()
         flash("Ballot cast successfully")
         return redirect(url_for('election.election_home', election=election.name))
