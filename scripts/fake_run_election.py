@@ -50,7 +50,7 @@ def fake_tally(ballots: List[CandidateOrderBallot],
         for i in range(len(c_rem)):
             if c_rem[i] == stop_candidate:
                 continue
-            if tallies[i] >= quota:               # TODO NOTE: Not sure if it needs to be >= or >
+            if tallies[i] >= quota:
                 elected.append(c_rem[i])
 
         if len(elected) > 0:

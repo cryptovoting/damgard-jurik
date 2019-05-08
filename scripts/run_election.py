@@ -14,7 +14,7 @@ if __name__ == '__main__':
                         help='Path to a .txt file containing a ballot image')
     args = parser.parse_args()
 
-    public_key, private_key_shares = keygen(n_bits=32, s=1, threshold=1, n_shares=1)
+    public_key, private_key_shares = keygen(n_bits=128, s=1, threshold=1, n_shares=1)
 
     contest_id_to_contest = load_ballot_data(
         master_lookup_path=args.master_lookup,

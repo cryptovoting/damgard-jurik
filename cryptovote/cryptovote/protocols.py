@@ -94,7 +94,6 @@ def reweigh_votes(ballots: List[FirstPreferenceBallot],
         # only consider the elected candidates
         if candidates[i] in elected:
             # TODO: do we want to do the approximation from the paper?
-            # TODO: is this going to get the least common multiple or just a common multiple of all the tallies?
             d_lcm = lcm(d_lcm, tallies[i])
 
     result = []
@@ -128,28 +127,28 @@ def stv_tally(ballots: List[CandidateOrderBallot],
         raise ValueError
 
     c_rem = ballots[0].candidates       # the remaining candidates
-    quota = mpz(len(ballots)) // (seats + 1) + 1     # the quota required for election
+    quota = mpz(len(ballots)) // (seats + 1) + 1     # the (droop) quota required for election
     result = []
     offset = mpz(1) if stop_candidate in c_rem else mpz(0)
 
     while len(c_rem) - offset > seats:
-        # print("Computing FPT...")
+        print("Computing FPT...")
         fpb_ballots, tallies = compute_first_preference_tallies(ballots, private_key_shares, public_key)
         elected = []
 
         for i in range(len(c_rem)):
             if c_rem[i] == stop_candidate:
                 continue
-            if tallies[i] >= quota:               # TODO NOTE: Not sure if it needs to be >= or >
+            if tallies[i] >= quota:
                 elected.append(c_rem[i])
 
         if len(elected) > 0:
             result += elected
             seats -= len(elected)
-            # print(len(elected), "candidates elected. Reweighing votes...")
+            print(len(elected), "candidates elected. Reweighing votes...")
             ballots, d_lcm = reweigh_votes(fpb_ballots, elected, quota, tallies, public_key)
             quota *= d_lcm
-            # print("Eliminating set...")
+            print("Eliminating set...")
             ballots = eliminate_candidate_set(elected, ballots, private_key_shares, public_key)
         else:
             i = None
@@ -160,7 +159,7 @@ def stv_tally(ballots: List[CandidateOrderBallot],
                 if i is None or tallies[j] < tallies[i]:
                     i = j
 
-            # print("Eliminating set...", i, c_rem[i])
+            print("Eliminating set...", i, c_rem[i])
             ballots = eliminate_candidate_set([c_rem[i]], ballots, private_key_shares, public_key)
 
         c_rem = ballots[0].candidates
