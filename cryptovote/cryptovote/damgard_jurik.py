@@ -96,6 +96,12 @@ class PublicKey:
 
         return c
 
+    def __eq__(self, other: Any) -> bool:
+        if not isinstance(other, PublicKey):
+            return False
+
+        return self.__dict__ == other.__dict__
+
 
 class PrivateKeyShare:
     @int_to_mpz
@@ -110,6 +116,12 @@ class PrivateKeyShare:
         c_i = pow(c.value, self.two_delta_s_i, self.public_key.n_s_1)
 
         return c_i
+
+    def __eq__(self, other: Any) -> bool:
+        if not isinstance(other, PrivateKeyShare):
+            return False
+
+        return self.__dict__ == other.__dict__
 
 
 @int_to_mpz
