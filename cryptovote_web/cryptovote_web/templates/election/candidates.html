@@ -18,9 +18,9 @@
             </tr>
           </thead>
           <tbody>
-            {% for candidate in candidates %}
+            {% for candidate in election.candidates %}
               <tr>
-                <td>{{ candidate }}</td>
+                <td>{{ candidate.name }}</td>
               </tr>
             {% endfor %}
           </tbody>

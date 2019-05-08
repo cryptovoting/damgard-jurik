@@ -16,8 +16,8 @@
 
               <ul id="sortable_nav" class="sortable ui-sortable" >
                 {% for candidate in candidates %}
-                  <li class="ui-state-default" data-candidate="{{ candidate }}">
-                      {{ candidate }}
+                  <li class="ui-state-default" data-candidate="{{ candidate.name }}">
+                      {{ candidate.name }}
                       <div class="ui-state-default sortable-number">
                           {{ loop.index }}
                       </div>
