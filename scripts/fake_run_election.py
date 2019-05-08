@@ -134,11 +134,10 @@ if __name__ == '__main__':
 
     import time
 
-    for contest_id in contest_id_to_contest:
+    for contest_id, contest in contest_id_to_contest.items():
         start = time.time()
         print(f'Processing contest id = {contest_id}')
 
-        contest = contest_id_to_contest[contest_id]
         num_candidates = len(contest['candidate_id_to_candidate_name'])
         print(f'Number of candidates = {num_candidates}')
 

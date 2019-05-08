@@ -185,6 +185,7 @@ def get_unique_private_key_shares(private_key_shares: List[PrivateKeyShare]) -> 
     """ Returns a list of unique PrivateKeyShares (i.e. (i, f(i)) pairs with unique i)."""
     i_set = set()
     unique_private_key_shares = []
+
     for pk in private_key_shares:
         if pk.i not in i_set:
             unique_private_key_shares.append(pk)
@@ -218,8 +219,10 @@ def threshold_decrypt(c: EncryptedNumber, private_key_shares: List[PrivateKeySha
     def lam(i: int) -> int:
         S_prime = S - {i}
         l = delta % n_s_m
+
         for i_prime in S_prime:
             l = l * i_prime * inv_mod(i_prime - i, n_s_m) % n_s_m
+
         return l
 
     # Decrypt

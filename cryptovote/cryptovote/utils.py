@@ -7,6 +7,7 @@ Contains useful utility functions.
 
 """
 from functools import wraps
+from math import gcd
 from typing import Callable, List, Tuple
 
 from gmpy2 import mpz
@@ -32,12 +33,6 @@ def prod(nums: List[int]) -> int:
 
 
 @int_to_mpz
-def gcd(a: int, b: int) -> int:
-    """ Find the greatest common divisor of two integers. """
-    return a if b == 0 else gcd(b, a % b)
-
-
-@int_to_mpz
 def lcm(a: int, b: int) -> int:
     """ Find the least common multiple of two integers. """
     return a * b // gcd(a, b)
@@ -59,13 +54,14 @@ def extended_euclidean(a: int, b: int) -> Tuple[int, int]:
 
     https://en.wikibooks.org/wiki/Algorithm_Implementation/Mathematics/Extended_Euclidean_algorithm#Python
     """
-    if a == 0:
-        return mpz(0), mpz(1)
+    x0, x1, y0, y1 = mpz(0), mpz(1), mpz(1), mpz(0)
 
-    y, x = extended_euclidean(b % a, a)
-    x = x - (b // a) * y
+    while a != 0:
+        q, b, a = b // a, a, b % a
+        y0, y1 = y1, y0 - q * y1
+        x0, x1 = x1, x0 - q * x1
 
-    return x, y
+    return x0, y0
 
 
 @int_to_mpz
