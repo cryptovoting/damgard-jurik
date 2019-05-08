@@ -11,3 +11,4 @@ flask-login
 webauthn
 uuid
 sendgrid
+../cryptovote
