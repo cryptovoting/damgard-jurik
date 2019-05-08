@@ -6,12 +6,15 @@ Boucher, Govedič, Saowakon, Swanson 2019
 Contains main protocols for the ShuffleSum voting algorithm.
 
 """
+from functools import partial
+from multiprocessing import Pool
 from typing import List, Tuple
 
 from gmpy2 import mpz
-from tqdm import trange, tqdm
+from tqdm import tqdm
 
-from cryptovote.ballots import FirstPreferenceBallot, CandidateOrderBallot
+from cryptovote.ballots import CandidateOrderBallot, FirstPreferenceBallot, candidate_elimination_to_candidate_order, \
+    candidate_order_to_candidate_elimination, candidate_order_to_first_preference
 from cryptovote.damgard_jurik import PrivateKeyShare, PublicKey, threshold_decrypt
 from cryptovote.utils import debug, lcm
 
@@ -39,14 +42,14 @@ def eliminate_candidate_set(candidate_set: List[int],
     result = []
 
     for ballot in ballots:
-        ceb = ballot.to_candidate_elimination(eliminated, private_key_shares, public_key)
+        ceb = candidate_order_to_candidate_elimination(ballot, eliminated, private_key_shares, public_key)
         prefix_sum = public_key.encrypt(0)
 
         for i in range(num_candidates):
             prefix_sum += ceb.eliminated[i]
             ceb.preferences[i] -= prefix_sum
 
-        cob = ceb.to_candidate_order(private_key_shares)
+        cob = candidate_elimination_to_candidate_order(ceb, private_key_shares)
         updated_candidates = [cob.candidates[i] for i in relevant_columns]
         updated_preferences = [cob.preferences[i] for i in relevant_columns]
         result.append(CandidateOrderBallot(updated_candidates, updated_preferences, cob.weight))
@@ -72,7 +75,7 @@ def compute_first_preference_tallies(ballots: List[CandidateOrderBallot],
     fpb_ballots = []
 
     for ballot in tqdm(ballots, total=len(ballots)):
-        fpb = ballot.to_first_preference(private_key_shares, public_key)
+        fpb = candidate_order_to_first_preference(ballot, private_key_shares, public_key)
         fpb_ballots.append(fpb)
 
         for i in range(num_candidates):

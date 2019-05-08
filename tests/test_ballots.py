@@ -8,7 +8,8 @@ Unit tests for ballots.
 """
 import unittest
 
-from cryptovote.ballots import Ballot, CandidateOrderBallot, FirstPreferenceBallot, CandidateEliminationBallot
+from cryptovote.ballots import Ballot, CandidateOrderBallot, FirstPreferenceBallot, CandidateEliminationBallot, \
+    candidate_elimination_to_candidate_order, candidate_order_to_candidate_elimination, candidate_order_to_first_preference
 from cryptovote.damgard_jurik import keygen, threshold_decrypt
 
 
@@ -53,7 +54,7 @@ class TestCandidateOrderBallot(unittest.TestCase):
 
         ballot = CandidateOrderBallot(candidates[:], [self.public_key.encrypt(pref) for pref in preferences], self.public_key.encrypt(weight))
 
-        result = ballot.to_first_preference(self.private_key_shares, self.public_key)
+        result = candidate_order_to_first_preference(ballot, self.private_key_shares, self.public_key)
 
         self.assertIsInstance(result, FirstPreferenceBallot, "The returned ballot must be of type FirstPreferenceBallot")
 
@@ -72,7 +73,7 @@ class TestCandidateOrderBallot(unittest.TestCase):
         ballot = CandidateOrderBallot(candidates[:], [self.public_key.encrypt(pref) for pref in preferences],
                                       self.public_key.encrypt(weight))
 
-        result = ballot.to_first_preference(self.private_key_shares, self.public_key)
+        result = candidate_order_to_first_preference(ballot, self.private_key_shares, self.public_key)
 
         self.assertIsInstance(result, FirstPreferenceBallot, "The returned ballot must be of type FirstPreferenceBallot")
 
@@ -92,7 +93,7 @@ class TestCandidateOrderBallot(unittest.TestCase):
         ballot = CandidateOrderBallot(candidates[:], [self.public_key.encrypt(pref) for pref in preferences],
                                       self.public_key.encrypt(weight))
 
-        result = ballot.to_candidate_elimination(eliminated, self.private_key_shares, self.public_key)
+        result = candidate_order_to_candidate_elimination(ballot, eliminated, self.private_key_shares, self.public_key)
 
         self.assertIsInstance(result, CandidateEliminationBallot, "The returned ballot must be of type CandidateEliminationBallot")
 
@@ -116,7 +117,7 @@ class TestCandidateEliminationBallot(unittest.TestCase):
         ballot = CandidateEliminationBallot([public_key.encrypt(cand) for cand in candidates], [public_key.encrypt(pref) for pref in preferences],[public_key.encrypt(elim) for elim in post_eliminated],
                                             public_key.encrypt(weight))
 
-        result = ballot.to_candidate_order(private_key_shares)
+        result = candidate_elimination_to_candidate_order(ballot, private_key_shares)
 
         self.assertIsInstance(result, CandidateOrderBallot,
                               "The returned ballot must be of type CandidateOrderBallot")
