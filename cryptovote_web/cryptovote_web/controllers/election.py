@@ -2,7 +2,7 @@
 from flask import Blueprint, render_template, request, redirect, url_for
 from flask_login import login_required
 from json import loads
-from ..helpers import election_exists, send_voter_email
+from ..helpers import election_exists, send_vote_email
 from ..models import Voter, Election
 from ..extensions import db
 
@@ -37,6 +37,8 @@ def authority_list(election):
 @blueprint.route('/results', subdomain='<election>')
 @election_exists
 def results(election):
+    if not election.results:
+        return redirect(url_for('election.election_home', election=election.name))
     return render_template('election/results.html', election=election)
 
 
@@ -56,7 +58,14 @@ def register_voters(election):
             if not user:
                 voter = Voter(email=email, election=election)
                 db.session.add(voter)
-                send_voter_email(voter)
+                send_vote_email(voter, request.url_root)
         db.session.commit()
         # Redirect to the election homepage
         return redirect(url_for('election.election_home', election=election.name))
+
+
+@blueprint.route('/candidates', subdomain='<election>')
+@election_exists
+def candidates(election):
+    candidates = election.candidates.split(",")
+    return render_template('election/candidates.html', election=election, candidates=candidates)

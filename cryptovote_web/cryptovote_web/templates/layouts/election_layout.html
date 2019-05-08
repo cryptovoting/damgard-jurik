@@ -23,6 +23,7 @@
                 <ul class="nav navbar-nav ml-auto">
                     <li class="nav-item" role="presentation"><a class="nav-link" href="{{ url_for('election.bulletin', election=election.name) }}">Bulletin</a></li>
                     <li class="nav-item" role="presentation"><a class="nav-link" href="{{ url_for('election.voter_list', election=election.name) }}">Voters</a></li>
+                    <li class="nav-item" role="presentation"><a class="nav-link" href="{{ url_for('election.candidates', election=election.name) }}">Candidates</a></li>
                     <li class="nav-item" role="presentation"><a class="nav-link" href="{{ url_for('election.authority_list', election=election.name) }}">Authorities</a></li>
                     {% if current_user.is_authenticated %}
                       <li class="nav-item" role="presentation"><a class="nav-link" href="{{ url_for('election.register_voters', election=election.name) }}">Register Voters</a></li>

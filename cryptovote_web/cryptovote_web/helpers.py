@@ -50,13 +50,18 @@ def election_exists(f):
     return decorated
 
 
-def send_voter_email(voter):
+def send_vote_email(voter, url):
     election = title(voter.election.name)
     message = Mail(
         from_email=f"Cryptovote <{voter.election.name}@{SENDGRID_FROM_DOMAIN}>",
         to_emails=f"<{voter.email}>",
         subject=f'Vote in {election}',
-        html_content=f'Your secret key is: {voter.email_key}')
+        html_content=f"""
+                        <h2>Vote</h2>
+                        <p>You are invited to cast your ballot in {election}
+                        by clicking
+                        <a href="{url}voter-registration?k={voter.email_key}">here</a>.
+                        """)
     try:
         sg = SendGridAPIClient(SENDGRID_API_KEY)
         sg.send(message)
@@ -71,7 +76,7 @@ def send_authority_confirm_email(authority, url):
         to_emails=f"{authority.name} <{authority.email}>",
         subject=f'Confirm Your Email for {election}',
         html_content=f"""
-                        <h1>Confirm Email</h1>
+                        <h2>Confirm Email</h2>
                         <p>Please confirm your email for {election} on
                         Cryptovote by clicking
                         <a href="{url}confirm-email?k={authority.email_key}">here</a>.

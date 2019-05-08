@@ -13,6 +13,7 @@ class Voter(db.Model):
     email_key = db.Column(db.Text, unique=True, nullable=False)
     election_id = db.Column(db.Integer, db.ForeignKey('election.id'),
                             nullable=False)
+    ballot = db.Column(db.Text)
 
     def __init__(self, **kwargs):
         self.email_key = str(uuid4())

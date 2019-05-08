@@ -44,6 +44,7 @@ def register_blueprints(app):
     app.register_blueprint(controllers.create_election.blueprint)
     app.register_blueprint(controllers.election.blueprint)
     app.register_blueprint(controllers.auth.blueprint)
+    app.register_blueprint(controllers.vote.blueprint)
     return None
 
 
