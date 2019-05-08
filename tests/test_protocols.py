@@ -10,7 +10,7 @@ from typing import List
 import unittest
 
 from cryptovote.ballots import CandidateOrderBallot, FirstPreferenceBallot
-from cryptovote.protocols import compute_first_preference_tallies, eliminate_candidate_set, reweigh_votes
+from cryptovote.protocols import compute_first_preference_tallies, eliminate_candidate_set, reweight_votes
 from cryptovote.damgard_jurik import EncryptedNumber, keygen, PrivateKeyShare, PublicKey, threshold_decrypt
 
 
@@ -170,7 +170,7 @@ class TestReweighVotes(unittest.TestCase):
         tallies = [8, 0, 10, 2, 12, 0]
         q = 5
         elected = [0, 2, 4]
-        cobs, d_lcm = reweigh_votes(ballots, elected, q, tallies, public_key)
+        cobs, d_lcm = reweight_votes(ballots, elected, q, tallies, public_key)
 
         self.assertEqual(120, d_lcm, "The right lowest common multiple")
         self.assertEqual(len(ballots), len(cobs), "The number of ballots must stay the same after computation")
@@ -300,7 +300,7 @@ class TestReweighVotes(unittest.TestCase):
 
         q = 12
         elected = [0, 6, 8]
-        cobs, d_lcm = reweigh_votes(ballots, elected, q, tallies, public_key)
+        cobs, d_lcm = reweight_votes(ballots, elected, q, tallies, public_key)
 
         self.assertEqual(84, d_lcm, "The right lowest common multiple")
         self.assertEqual(len(ballots), len(cobs), "The number of ballots must stay the same after computation")

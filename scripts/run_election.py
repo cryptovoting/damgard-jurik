@@ -14,7 +14,7 @@ if __name__ == '__main__':
                         help='Path to a .txt file containing a ballot image')
     args = parser.parse_args()
 
-    public_key, private_key_shares = keygen(n_bits=128, s=1, threshold=1, n_shares=1)
+    public_key, private_key_shares = keygen(n_bits=32, s=1, threshold=3, n_shares=3)
 
     contest_id_to_contest = load_ballot_data(
         master_lookup_path=args.master_lookup,
@@ -30,6 +30,7 @@ if __name__ == '__main__':
 
         num_candidates = len(contest['candidate_id_to_candidate_name'])
         print(f'Number of candidates = {num_candidates}')
+        print(f'Number of voters = {len(contest["ballots"]):,}')
 
         result = stv_tally(
             ballots=contest['ballots'],

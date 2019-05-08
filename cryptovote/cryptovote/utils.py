@@ -13,6 +13,23 @@ from typing import Callable, List, Tuple
 from gmpy2 import mpz
 
 
+DEBUG = True
+
+
+def set_debug(debug: bool):
+    """ Sets the debug flag."""
+    global DEBUG
+    DEBUG = debug
+
+
+def debug(*args):
+    """ Prints debug statements."""
+    global DEBUG
+
+    if DEBUG:
+        print(*args)
+
+
 def int_to_mpz(func: Callable) -> Callable:
     """ Converts all int arguments to mpz."""
     @wraps(func)

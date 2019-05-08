@@ -41,68 +41,66 @@ class TestBallots(unittest.TestCase):
 
 
 class TestCandidateOrderBallot(unittest.TestCase):
+    def setUp(self):
+        self.public_key, self.private_key_shares = keygen(n_bits=64, s=3, threshold=5, n_shares=9)
+
     def test_toFirstPreferenceBallot_01(self):
-        public_key, private_key_shares = keygen(n_bits=64, s=3, threshold=5, n_shares=9)
 
         candidates = [1, 2, 3]
         preferences = [3, 1, 2]
         weight = 1
         first_preferences = [0, weight, 0]
 
-        ballot = CandidateOrderBallot(candidates[:], [public_key.encrypt(pref) for pref in preferences], public_key.encrypt(weight))
+        ballot = CandidateOrderBallot(candidates[:], [self.public_key.encrypt(pref) for pref in preferences], self.public_key.encrypt(weight))
 
-        result = ballot.to_first_preference(private_key_shares, public_key)
+        result = ballot.to_first_preference(self.private_key_shares, self.public_key)
 
         self.assertIsInstance(result, FirstPreferenceBallot, "The returned ballot must be of type FirstPreferenceBallot")
 
         self.assertListEqual(result.candidates, candidates, "The candidates list must match")
 
-        self.assertListEqual([threshold_decrypt(preference, private_key_shares) for preference in result.preferences], preferences, "The preferences list must match")
+        self.assertListEqual([threshold_decrypt(preference, self.private_key_shares) for preference in result.preferences], preferences, "The preferences list must match")
 
-        self.assertListEqual([threshold_decrypt(weight, private_key_shares) for weight in result.weights], first_preferences, "The weights list must match")
+        self.assertListEqual([threshold_decrypt(weight, self.private_key_shares) for weight in result.weights], first_preferences, "The weights list must match")
 
     def test_toFirstPreferenceBallot_02(self):
-        public_key, private_key_shares = keygen(n_bits=64, s=3, threshold=5, n_shares=9)
-
         candidates = [0, 1, 2, 3, 4, 5]
         preferences = [1, 5, 0, 2, 4, 3]
         weight = 8
         first_preferences = [0, 0, weight, 0, 0, 0]
 
-        ballot = CandidateOrderBallot(candidates[:], [public_key.encrypt(pref) for pref in preferences],
-                                      public_key.encrypt(weight))
+        ballot = CandidateOrderBallot(candidates[:], [self.public_key.encrypt(pref) for pref in preferences],
+                                      self.public_key.encrypt(weight))
 
-        result = ballot.to_first_preference(private_key_shares, public_key)
+        result = ballot.to_first_preference(self.private_key_shares, self.public_key)
 
         self.assertIsInstance(result, FirstPreferenceBallot, "The returned ballot must be of type FirstPreferenceBallot")
 
         self.assertListEqual(result.candidates, candidates, "The candidates list must match")
 
-        self.assertListEqual([threshold_decrypt(preference, private_key_shares) for preference in result.preferences], preferences, "The preferences list must match")
+        self.assertListEqual([threshold_decrypt(preference, self.private_key_shares) for preference in result.preferences], preferences, "The preferences list must match")
 
-        self.assertListEqual([threshold_decrypt(weight, private_key_shares) for weight in result.weights], first_preferences, "The weights list must match")
+        self.assertListEqual([threshold_decrypt(weight, self.private_key_shares) for weight in result.weights], first_preferences, "The weights list must match")
 
     def test_toCandidateElimination_01(self):
-        public_key, private_key_shares = keygen(n_bits=64, s=3, threshold=5, n_shares=9)
-
         candidates = [1, 2, 3]
         preferences = [3, 1, 2]
         weight = 1
         eliminated = [0, 0, 1]
         post_eliminated = [0, 1, 0]
         
-        ballot = CandidateOrderBallot(candidates[:], [public_key.encrypt(pref) for pref in preferences],
-                                      public_key.encrypt(weight))
+        ballot = CandidateOrderBallot(candidates[:], [self.public_key.encrypt(pref) for pref in preferences],
+                                      self.public_key.encrypt(weight))
 
-        result = ballot.to_candidate_elimination(eliminated, private_key_shares, public_key)
+        result = ballot.to_candidate_elimination(eliminated, self.private_key_shares, self.public_key)
 
         self.assertIsInstance(result, CandidateEliminationBallot, "The returned ballot must be of type CandidateEliminationBallot")
 
-        self.assertListEqual([threshold_decrypt(preference, private_key_shares) for preference in result.preferences], sorted(preferences), "The preferences list must match")
+        self.assertListEqual([threshold_decrypt(preference, self.private_key_shares) for preference in result.preferences], sorted(preferences), "The preferences list must match")
 
-        self.assertListEqual([threshold_decrypt(eliminated_i, private_key_shares) for eliminated_i in result.eliminated], post_eliminated, "The eliminated list must match")
+        self.assertListEqual([threshold_decrypt(eliminated_i, self.private_key_shares) for eliminated_i in result.eliminated], post_eliminated, "The eliminated list must match")
 
-        self.assertEqual(threshold_decrypt(result.weight, private_key_shares), weight, "The weight must match")
+        self.assertEqual(threshold_decrypt(result.weight, self.private_key_shares), weight, "The weight must match")
 
 
 class TestCandidateEliminationBallot(unittest.TestCase):

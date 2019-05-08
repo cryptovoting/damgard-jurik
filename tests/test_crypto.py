@@ -26,7 +26,7 @@ class TestShamir(unittest.TestCase):
 
     def test_shamir(self):
         for _ in range(10):
-            modulus = gen_prime(b=32)
+            modulus = gen_prime(n_bits=32)
             secret = randbelow(modulus)
             n_shares = randbelow(20) + 1
             threshold = randbelow(n_shares) + 1

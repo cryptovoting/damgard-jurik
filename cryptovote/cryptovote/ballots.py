@@ -31,12 +31,14 @@ class Ballot(ABC):
                 candidates,preferences,weights = shuffle(candidates, preferences, weights)
         """
         columns = list(zip(*rows))
+
         # Perform a Fisher-Yates shuffle using cryptographically secure randomness
         n = len(columns)
         for i in range(n - 1):
             # i <= j < n
             j = randbelow(n - i) + i
             columns[i], columns[j] = columns[j], columns[i]
+
         # Return translation of columns back to rows
         return [list(t) for t in zip(*columns)]
 

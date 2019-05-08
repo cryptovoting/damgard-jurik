@@ -140,6 +140,7 @@ if __name__ == '__main__':
 
         num_candidates = len(contest['candidate_id_to_candidate_name'])
         print(f'Number of candidates = {num_candidates}')
+        print(f'Number of voters = {len(contest["ballots"]):,}')
 
         result = fake_tally(
             ballots=contest['ballots'],
