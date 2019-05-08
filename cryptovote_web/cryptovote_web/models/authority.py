@@ -1,6 +1,7 @@
 from ..extensions import db
 from flask_login import UserMixin as FlaskLoginUser
 from uuid import uuid4
+from cryptovote.damgard_jurik import keygen
 
 
 class Authority(db.Model, FlaskLoginUser):
@@ -15,6 +16,8 @@ class Authority(db.Model, FlaskLoginUser):
     email_key = db.Column(db.Text, unique=True, nullable=False)
     election_id = db.Column(db.Integer, db.ForeignKey('election.id'),
                             nullable=False)
+    public_key = db.Column(db.PickleType, unique=True, nullable=False)
+    private_key = db.Column(db.PickleType, nullable=False)
 
     ukey = db.Column(db.String(20), unique=True, nullable=False)
     credential_id = db.Column(db.String(250), unique=True, nullable=False)
@@ -25,6 +28,9 @@ class Authority(db.Model, FlaskLoginUser):
 
     def __init__(self, **kwargs):
         self.email_key = str(uuid4())
+        keypair = keygen(threshold=1, n_shares=1, n_bits=32)
+        self.public_key = keypair[0]
+        self.private_key = keypair[1][0]
         for key, value in kwargs.items():
             setattr(self, key, value)
 
