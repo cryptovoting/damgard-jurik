@@ -72,20 +72,25 @@ def vote(election):
         if not public_key:
             flash("Authority missing public key.")
             return redirect(url_for('election.election_home', election=election.name))
-        preferences = []
+        candidates = []
         for candidate in ballot.split(','):
             c = Candidate.query.filter_by(election=election, name=candidate).first()
             if not c:
                 flash("Invalid ballot.")
                 return render_template('vote/vote.html', election=election, candidates=candidates)
-            preferences.append(public_key.encrypt(c.id))
-        candidates = []
-        for candidate in election.candidates:
-            candidates.append(candidate.id)
+            candidates.append(c.id)
+        if len(election.candidates) != len(candidates):
+            flash("Invalid number of votes on ballot.")
+            return render_template('vote/vote.html', election=election, candidates=candidates)
+        preferences = list(range(1, len(candidates)+1))
+        candidate_to_preference = {candidate: preference for candidate, preference in zip(candidates, preferences)}
+        candidates.sort()
+        preferences = [candidate_to_preference[candidate] for candidate in candidates]
         weight = public_key.encrypt(1)
-        voter.ballot = CandidateOrderBallot(candidates, preferences, weight)
+        enc_preferences = list(map(lambda p : public_key.encrypt(p), preferences))
+        voter.ballot = CandidateOrderBallot(candidates, enc_preferences, weight)
         election.bulletin += f"{voter.id}: "
-        for preference in preferences:
+        for preference in enc_preferences:
             election.bulletin += str(preference.value) + " "
         election.bulletin += "\n\n"
         db.session.commit()
