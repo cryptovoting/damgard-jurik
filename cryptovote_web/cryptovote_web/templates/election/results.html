@@ -16,18 +16,15 @@
             <tr>
               <th scope="col">#</th>
               <th scope="col">Name</th>
-              <th scope="col">Email</th>
             </tr>
           </thead>
           <tbody>
-            <!--
-            {% for candidate in election.candidates %}
+            {% for candidate in elected_candidates %}
               <tr>
                 <th scope="row">{{ loop.index }}</th>
                 <td>{{ candidate.name }}</td>
               </tr>
             {% endfor %}
-          -->
           </tbody>
         </table>
     </div>

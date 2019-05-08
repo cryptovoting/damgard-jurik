@@ -79,7 +79,7 @@ const didClickRegister = async (e) => {
 
     // Redirect to the correct page on success
     if (window.location.pathname == "/setup") {
-      window.location.replace("/add-candidates")
+      window.location.replace("/seats")
     } else {
       window.location.replace("/");
     }

@@ -14,7 +14,7 @@
         <div class="jumbotron text-left">
           <h4>{{ election.name | title }} Bulletin</h4>
           <hr />
-          <p>{{ election.bulletin }}</p>
+          <p style="word-wrap:break-word;">{{ election.bulletin | br | safe }}</p>
         </div>
     </div>
 </section>

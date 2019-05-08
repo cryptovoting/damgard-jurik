@@ -126,3 +126,22 @@ def add_candidates(election):
             db.session.add(c)
         db.session.commit()
         return redirect(url_for('election.register_voters', election=election.name))
+
+
+@blueprint.route('/seats', subdomain='<election>', methods=['GET', 'POST'])
+@login_required
+@election_exists
+def seats(election):
+    if election.seats:
+        flash("The number of seats has already been set for this election.")
+        return redirect(url_for('election.election_home', election=election.name))
+    if request.method == 'GET':
+        return render_template('create_election/seats.html', election=election)
+    else:
+        seats = request.form.get('seats')
+        if not seats or not seats.isdigit() or int(seats) < 1:
+            flash("Invalid number of seats.")
+            return render_template('create_election/seats.html', election=election)
+        election.seats = int(seats)
+        db.session.commit()
+        return redirect(url_for('create_election.add_candidates', election=election.name))

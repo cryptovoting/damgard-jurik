@@ -2,8 +2,9 @@
 from flask import Blueprint, render_template, redirect, url_for, session, request, flash
 from random import shuffle
 from ..helpers import election_exists
-from ..models import Voter
+from ..models import Voter, Candidate, Authority
 from ..extensions import db
+from cryptovote.ballots import CandidateOrderBallot
 
 blueprint = Blueprint('vote', __name__)
 
@@ -63,8 +64,30 @@ def vote(election):
         if not ballot:
             flash("No ballot submitted.")
             return render_template('vote/vote.html', election=election, candidates=candidates)
-        voter.ballot = ballot
-        election.bulletin += f"{voter.id}: {ballot}\n"
+        authority = Authority.query.filter_by(election=election).first()
+        if not authority:
+            flash("Election is missing authorities.")
+            return redirect(url_for('election.election_home', election=election.name))
+        public_key = authority.public_key
+        if not public_key:
+            flash("Authority missing public key.")
+            return redirect(url_for('election.election_home', election=election.name))
+        preferences = []
+        for candidate in ballot.split(','):
+            c = Candidate.query.filter_by(election=election, name=candidate).first()
+            if not c:
+                flash("Invalid ballot.")
+                return render_template('vote/vote.html', election=election, candidates=candidates)
+            preferences.append(public_key.encrypt(c.id))
+        candidates = []
+        for candidate in election.candidates:
+            candidates.append(candidate.id)
+        weight = public_key.encrypt(1)
+        voter.ballot = CandidateOrderBallot(candidates, preferences, weight)
+        election.bulletin += f"{voter.id}: "
+        for preference in preferences:
+            election.bulletin += str(preference.value) + " "
+        election.bulletin += "\n\n"
         db.session.commit()
         flash("Ballot cast successfully")
         return redirect(url_for('election.election_home', election=election.name))

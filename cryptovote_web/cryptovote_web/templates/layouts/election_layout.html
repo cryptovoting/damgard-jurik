@@ -25,8 +25,14 @@
                     <li class="nav-item" role="presentation"><a class="nav-link" href="{{ url_for('election.voter_list', election=election.name) }}">Voters</a></li>
                     <li class="nav-item" role="presentation"><a class="nav-link" href="{{ url_for('election.candidates', election=election.name) }}">Candidates</a></li>
                     <li class="nav-item" role="presentation"><a class="nav-link" href="{{ url_for('election.authority_list', election=election.name) }}">Authorities</a></li>
+                    {% if election.results %}
+                      <li class="nav-item" role="presentation"><a class="nav-link" href="{{ url_for('election.results', election=election.name) }}">Results</a></li>
+                    {% endif %}
                     {% if current_user.is_authenticated %}
                       <li class="nav-item" role="presentation"><a class="nav-link" href="{{ url_for('election.register_voters', election=election.name) }}">Register Voters</a></li>
+                      {% if not election.results %}
+                        <li class="nav-item" role="presentation"><a class="nav-link" href="{{ url_for('election.tally_results', election=election.name) }}">Tally Results</a></li>
+                      {% endif %}
                       <li class="nav-item" role="presentation"><a class="nav-link" href="{{ url_for('auth.logout', election=election.name) }}">Logout</a></li>
                     {% else %}
                       <li class="nav-item" role="presentation"><a class="nav-link" href="{{ url_for('auth.login', election=election.name) }}">Login</a></li>

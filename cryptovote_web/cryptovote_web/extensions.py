@@ -38,3 +38,7 @@ def title(value):
 def suppress_none(value):
     """ Returns empty string for none, otherwise the passed value """
     return value if value else ""
+
+def br(value):
+    """ Replaces newlines with HTML-style <br>'s """
+    return value.replace("\n", "<br>")

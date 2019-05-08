@@ -17,6 +17,7 @@ class Election(db.Model):
                                  lazy=True)
     bulletin = db.Column(db.Text, default="")
     results = db.Column(db.Text)
+    seats = db.Column(db.Integer)
 
     def __init__(self, name):
         self.name = name

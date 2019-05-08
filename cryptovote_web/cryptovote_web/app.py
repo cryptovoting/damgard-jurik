@@ -3,7 +3,7 @@ import os
 from flask import Flask, render_template
 from flask_migrate import Migrate
 from . import settings, controllers, models
-from .extensions import db, install_secret_key, login_manager, title, suppress_none
+from .extensions import db, install_secret_key, login_manager, title, suppress_none, br
 
 project_dir = os.path.dirname(os.path.abspath(__file__))
 
@@ -35,6 +35,7 @@ def register_extensions(app):
     # Add custom HTML rendering filters
     app.jinja_env.filters["title"] = title
     app.jinja_env.filters["suppress_none"] = suppress_none
+    app.jinja_env.filters["br"] = br
     return None
 
 
