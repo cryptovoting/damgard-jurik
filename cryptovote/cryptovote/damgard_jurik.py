@@ -8,6 +8,7 @@ https://people.csail.mit.edu/rivest/voting/papers/DamgardJurikNielsen-AGeneraliz
 """
 from functools import lru_cache
 from math import factorial
+from multiprocessing import Pool
 from secrets import randbelow
 from typing import Any, List, Tuple
 
@@ -245,3 +246,15 @@ def threshold_decrypt(c: EncryptedNumber, private_key_shares: List[PrivateKeySha
     m = damgard_jurik_reduce(c_prime, s, n) * inv_mod(4 * (delta ** 2), n_s) % n_s
 
     return m
+
+
+def encrypt_list(m_list: List[int],
+                 public_key: PublicKey,
+                 parallel: bool = True) -> List[EncryptedNumber]:
+    pass
+
+
+def threshold_decrypt_list(c_list: List[EncryptedNumber],
+                           private_key_shares: List[PrivateKeyShare],
+                           parallel: bool = True) -> List[int]:
+    pass

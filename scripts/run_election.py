@@ -33,7 +33,7 @@ if __name__ == '__main__':
         print(f'Number of voters = {len(contest["ballots"]):,}')
 
         result = stv_tally(
-            ballots=contest['ballots'],
+            cob_ballots=contest['ballots'],
             seats=1,
             stop_candidate=contest['stop_candidate_id'],
             private_key_shares=private_key_shares,

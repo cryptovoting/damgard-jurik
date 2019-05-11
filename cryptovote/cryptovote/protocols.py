@@ -8,7 +8,7 @@ Contains main protocols for the ShuffleSum voting algorithm.
 """
 from functools import partial
 from multiprocessing import Pool
-from typing import List, Tuple
+from typing import List, Set, Tuple
 
 from gmpy2 import mpz
 from tqdm import tqdm
@@ -19,80 +19,32 @@ from cryptovote.damgard_jurik import PrivateKeyShare, PublicKey, threshold_decry
 from cryptovote.utils import debug, lcm
 
 
-def eliminate_candidate_set(candidate_set: List[int],
-                            cob_ballots: List[CandidateOrderBallot],
-                            private_key_shares: List[PrivateKeyShare],
-                            public_key: PublicKey) -> List[CandidateOrderBallot]:
-    """ Eliminate the given candidate set (1d) """
-    debug(f'Eliminating candidates: {candidate_set}')
-
-    # Deal with an empty set of ballots, just in case
-    if len(cob_ballots) == 0:
-        return []
-
-    # The number of remaining candidates (note that they not necessarily have numbers 1 through num_candidates)
-    num_candidates = len(cob_ballots[0].candidates)
-    eliminated = [mpz(1) if cob_ballots[0].candidates[i] in candidate_set else mpz(0) for i in range(num_candidates)]
-    relevant_columns = set()  # holds non eliminated candidates
-
-    for i in range(num_candidates):
-        if eliminated[i] == 0:
-            relevant_columns.add(i)
-
-    # Convert from CandidateOrderBallots to CandidateEliminationBallots
-    ceb_ballots = []
-    cob_to_ceb = partial(candidate_order_to_candidate_elimination,
-                         eliminated=eliminated, private_key_shares=private_key_shares, public_key=public_key)
-
-    with Pool() as pool:
-        for ceb in tqdm(pool.imap(cob_to_ceb, cob_ballots), total=len(cob_ballots)):
-            prefix_sum = public_key.encrypt(0)
-
-            for i in range(num_candidates):
-                prefix_sum += ceb.eliminated[i]
-                ceb.preferences[i] -= prefix_sum
-
-            ceb_ballots.append(ceb)
-
-    # Convert from CandidateEliminationBallot to CandidateOrderBallot
-    cob_ballots = []
-    ceb_to_cob = partial(candidate_elimination_to_candidate_order, private_key_shares=private_key_shares)
-
-    with Pool() as pool:
-        for cob in tqdm(pool.imap(ceb_to_cob, ceb_ballots), total=len(ceb_ballots)):
-            updated_candidates = [cob.candidates[i] for i in relevant_columns]
-            updated_preferences = [cob.preferences[i] for i in relevant_columns]
-            cob_ballots.append(CandidateOrderBallot(updated_candidates, updated_preferences, cob.weight))
-
-    return cob_ballots
-
-
 def compute_first_preference_tallies(cob_ballots: List[CandidateOrderBallot],
                                      private_key_shares: List[PrivateKeyShare],
                                      public_key: PublicKey) -> Tuple[List[FirstPreferenceBallot], List[int]]:
     """ Compute First-Preference Tallies (1b)
         Assumes there is at least one ballot.   """
-    debug('Converting CandidateOrderBallots to FirstPreferenceBallots')
+    debug('Computing first preference tallies')
 
     # Initialization
     if len(cob_ballots) == 0:
         raise ValueError('Need non-zero number of ballots')
 
     num_candidates = len(cob_ballots[0].candidates)
-    encrypted_tallies = [public_key.encrypt(0) for _ in range(num_candidates)]
 
-    # Perform computation
-    fpb_ballots = []
-    cob_to_fpb = partial(candidate_order_to_first_preference, private_key_shares=private_key_shares, public_key=public_key)
+    cob_to_fpb = partial(
+        func=candidate_order_to_first_preference,
+        private_key_shares=private_key_shares,
+        public_key=public_key
+    )
 
+    debug('Converting CandidateOrderBallots to FirstPreferenceBallots')
     with Pool() as pool:
-        for fpb in tqdm(pool.imap(cob_to_fpb, cob_ballots), total=len(cob_ballots)):
-            fpb_ballots.append(fpb)
+        fpb_ballots = list(tqdm(pool.imap(cob_to_fpb, cob_ballots), total=len(cob_ballots)))
 
-            for i in range(num_candidates):
-                encrypted_tallies[i] += fpb.weights[i]
+    debug('Summing encrypted weights')
+    encrypted_tallies = [sum(fpb.weights[i] for fpb in fpb_ballots) for i in range(num_candidates)]
 
-    # Return the result
     debug('Decrypting tallies')
     decrypted_tallies = [threshold_decrypt(encrypted_tally, private_key_shares)
                          for encrypted_tally in tqdm(encrypted_tallies, total=len(encrypted_tallies))]
@@ -101,7 +53,7 @@ def compute_first_preference_tallies(cob_ballots: List[CandidateOrderBallot],
 
 
 def reweight_votes(fpb_ballots: List[FirstPreferenceBallot],
-                   elected: List[int],
+                   elected: Set[int],
                    quota: int,
                    tallies: List[int],
                    public_key: PublicKey) -> Tuple[List[CandidateOrderBallot], int]:
@@ -116,7 +68,7 @@ def reweight_votes(fpb_ballots: List[FirstPreferenceBallot],
     d_lcm = mpz(1)
 
     for i in range(num_candidates):
-        # only consider the elected candidates
+        # Only consider the elected candidates
         if candidates[i] in elected:
             # TODO: do we want to do the approximation from the paper?
             d_lcm = lcm(d_lcm, tallies[i])
@@ -140,7 +92,58 @@ def reweight_votes(fpb_ballots: List[FirstPreferenceBallot],
     return cob_ballots, d_lcm
 
 
-def stv_tally(ballots: List[CandidateOrderBallot],
+def eliminate_candidate_set(candidate_set: Set[int],
+                            cob_ballots: List[CandidateOrderBallot],
+                            private_key_shares: List[PrivateKeyShare],
+                            public_key: PublicKey) -> List[CandidateOrderBallot]:
+    """ Eliminate the given candidate set (1d) """
+    debug(f'Eliminating candidates: {candidate_set}')
+
+    # Deal with an empty set of ballots, just in case
+    if len(cob_ballots) == 0:
+        return []
+
+    # The number of remaining candidates (note that they not necessarily have numbers 1 through num_candidates)
+    num_candidates = len(cob_ballots[0].candidates)
+    eliminated = [mpz(1) if candidate in candidate_set else mpz(0) for candidate in cob_ballots[0].candidates]
+    relevant_columns = {i for i in range(num_candidates) if eliminated[i] == 0}  # indices of non-eliminated candidates
+
+    # Convert from CandidateOrderBallots to CandidateEliminationBallots
+    ceb_ballots = []
+    cob_to_ceb = partial(
+        func=candidate_order_to_candidate_elimination,
+        eliminated=eliminated,
+        private_key_shares=private_key_shares,
+        public_key=public_key
+    )
+
+    with Pool() as pool:
+        for ceb in tqdm(pool.imap(cob_to_ceb, cob_ballots), total=len(cob_ballots)):
+            prefix_sum = public_key.encrypt(0)
+
+            for i in range(num_candidates):
+                prefix_sum += ceb.eliminated[i]
+                ceb.preferences[i] -= prefix_sum
+
+            ceb_ballots.append(ceb)
+
+    # Convert from CandidateEliminationBallot to CandidateOrderBallot
+    cob_ballots = []
+    ceb_to_cob = partial(
+        func=candidate_elimination_to_candidate_order,
+        private_key_shares=private_key_shares
+    )
+
+    with Pool() as pool:
+        for cob in tqdm(pool.imap(ceb_to_cob, ceb_ballots), total=len(ceb_ballots)):
+            updated_candidates = [cob.candidates[i] for i in relevant_columns]
+            updated_preferences = [cob.preferences[i] for i in relevant_columns]
+            cob_ballots.append(CandidateOrderBallot(updated_candidates, updated_preferences, cob.weight))
+
+    return cob_ballots
+
+
+def stv_tally(cob_ballots: List[CandidateOrderBallot],
               seats: int,
               stop_candidate: int,
               private_key_shares: List[PrivateKeyShare],
@@ -148,26 +151,29 @@ def stv_tally(ballots: List[CandidateOrderBallot],
     """ The main protocol of the ShuffleSum voting algorithm.
         Assumes there is at least one ballot.
         Returns a list of elected candidates. """
-    if len(ballots) == 0:
+    if len(cob_ballots) == 0:
         raise ValueError('Need non-zero number of ballots')
 
-    c_rem = ballots[0].candidates       # the remaining candidates
-    quota = mpz(len(ballots)) // (seats + 1) + 1     # the (droop) quota required for election
+    c_rem = cob_ballots[0].candidates       # the remaining candidates
+    quota = mpz(len(cob_ballots)) // (seats + 1) + 1     # the (droop) quota required for election
     result = []
-    offset = mpz(1) if stop_candidate in c_rem else mpz(0)
+    offset = 1 if stop_candidate in c_rem else 0
     round = 0
 
     while len(c_rem) - offset > seats:
         debug(f'Round {round}')
 
-        fpb_ballots, tallies = compute_first_preference_tallies(ballots, private_key_shares, public_key)
-        elected = []
+        fpb_ballots, tallies = compute_first_preference_tallies(cob_ballots, private_key_shares, public_key)
+        elected = set()
+
+        # TODO: print tallies
 
         for i in range(len(c_rem)):
             if c_rem[i] == stop_candidate:
                 continue
+
             if tallies[i] >= quota:
-                elected.append(c_rem[i])
+                elected.add(c_rem[i])
 
         debug(f'{len(elected)} candidates elected')
 
@@ -176,9 +182,9 @@ def stv_tally(ballots: List[CandidateOrderBallot],
 
             result += elected
             seats -= len(elected)
-            ballots, d_lcm = reweight_votes(fpb_ballots, elected, quota, tallies, public_key)
+            cob_ballots, d_lcm = reweight_votes(fpb_ballots, elected, quota, tallies, public_key)
             quota *= d_lcm
-            ballots = eliminate_candidate_set(elected, ballots, private_key_shares, public_key)
+            cob_ballots = eliminate_candidate_set(elected, cob_ballots, private_key_shares, public_key)
         else:
             i = None
 
@@ -191,9 +197,9 @@ def stv_tally(ballots: List[CandidateOrderBallot],
 
             debug(f'Candidate with fewest votes = {c_rem[i]}')
 
-            ballots = eliminate_candidate_set([c_rem[i]], ballots, private_key_shares, public_key)
+            cob_ballots = eliminate_candidate_set({c_rem[i]}, cob_ballots, private_key_shares, public_key)
 
-        c_rem = ballots[0].candidates
+        c_rem = cob_ballots[0].candidates
 
         debug(f'Remaining candidates: {c_rem}')
 
