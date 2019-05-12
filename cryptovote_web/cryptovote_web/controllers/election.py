@@ -96,7 +96,7 @@ def compute_election(election):
     if not authority:
         flash("Election has no authorities.")
         return jsonify({'success': False})
-    if not authority.public_key or not authority.private_key:
+    if not authority.public_key or not authority.private_key_ring:
         flash("Authority missing valid key pair.")
         return jsonify({'success': False})
     ballots = []
@@ -109,7 +109,7 @@ def compute_election(election):
     results = stv_tally(ballots,
                         election.seats,
                         -1,
-                        [authority.private_key],
+                        authority.private_key_ring,
                         authority.public_key)
     election.results = ",".join(map(str,results))
     db.session.commit()

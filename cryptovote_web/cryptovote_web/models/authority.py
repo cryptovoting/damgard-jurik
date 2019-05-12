@@ -17,7 +17,7 @@ class Authority(db.Model, FlaskLoginUser):
     election_id = db.Column(db.Integer, db.ForeignKey('election.id'),
                             nullable=False)
     public_key = db.Column(db.PickleType, unique=True, nullable=False)
-    private_key = db.Column(db.PickleType, nullable=False)
+    private_key_ring = db.Column(db.PickleType, nullable=False)
 
     webauthn = db.Column(db.Boolean, nullable=False)
     ukey = db.Column(db.String(20), unique=True, nullable=True)
@@ -33,7 +33,7 @@ class Authority(db.Model, FlaskLoginUser):
         self.email_key = str(uuid4())
         keypair = keygen(threshold=1, n_shares=1, n_bits=32)
         self.public_key = keypair[0]
-        self.private_key = keypair[1][0]
+        self.private_key_ring = keypair[1]
         for key, value in kwargs.items():
             setattr(self, key, value)
 
