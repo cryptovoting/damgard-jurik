@@ -10,22 +10,42 @@ for use with Shuffle Sum STV vote tallying.
 """
 from argparse import ArgumentParser
 from collections import defaultdict
+from typing import Dict
 
 from tqdm import tqdm
 
 from cryptovote.ballots import CandidateOrderBallot
 from cryptovote.damgard_jurik import PublicKey, keygen
+from cryptovote.utils import debug
 
 
 def load_ballot_data(master_lookup_path: str,
                      ballot_image_path: str,
-                     public_key: PublicKey) -> dict:
+                     public_key: PublicKey) -> Dict[int, dict]:
+    """Loads ballot data from a master lookup and ballot image files.
+
+    First, loads the master lookup file and parses it to identify
+    the candidates and contests. Then, loads the ballot image file
+    and parses it to collect all votes associated with a voter in
+    order to construct a ballot for each voter. During this process,
+    invalid votes are fixed where possible and are skipped otherwise.
+    Finally, encrypts voter preferences and constructs a
+    CandidateOrderBallot for each voter's vote. This list of ballots
+    and other information about the contest is returned in a dictionary
+    that maps contest id to this information.
+
+    See data/ballot_image_help.pdf for information on ballot image format.
+
+    :param master_lookup_path: Path to a master lookup .txt file.
+    :param ballot_image_path: Path to a ballot image .txt file.
+    :param public_key: The PublicKey to use to encrypt voter preferences.
+    :return: A dictionary mapping contest id to another dictionary that
+    contains information about the contest along with all of the ballots.
+    """
     # Load candidates from master lookup
     contest_id_to_candidate_ids = defaultdict(set)
     candidate_id_to_candidate_name = {}
     contest_id_to_contest_name = {}
-
-    print("looking at", master_lookup_path)
 
     with open(master_lookup_path) as f:
         for line in f:
@@ -76,9 +96,9 @@ def load_ballot_data(master_lookup_path: str,
             votes[candidate_id] = min(candidate_rank, votes.get(candidate_id, float('inf')))
             contest_id_to_voter_ids[contest_id].add(voter_id)
 
-    print(f'Number of invalid votes = {num_invalid_votes:,}')
-    print(f'Number of valid votes = {sum(len(votes) for votes in voter_id_to_votes.values()):,}')
-    print(f'Number of voters = {len(voter_id_to_votes):,}')
+    debug(f'Number of invalid votes = {num_invalid_votes:,}')
+    debug(f'Number of valid votes = {sum(len(votes) for votes in voter_id_to_votes.values()):,}')
+    debug(f'Number of voters = {len(voter_id_to_votes):,}')
 
     # Assert that each vote does not reuse a rank for multiple candidates
     for votes in voter_id_to_votes.values():
@@ -133,7 +153,6 @@ def load_ballot_data(master_lookup_path: str,
                     preferences.append(stop_candidate_rank)
 
                 else:
-                    # TODO: need more secure source of randomness than set pop
                     preferences.append(remaining_ranks.pop())
 
             # Encrypt preferences and weight

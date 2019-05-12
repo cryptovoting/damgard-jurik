@@ -1,4 +1,5 @@
 from argparse import ArgumentParser
+import time
 
 from cryptovote.damgard_jurik import keygen
 from cryptovote.protocols import stv_tally
@@ -22,16 +23,14 @@ if __name__ == '__main__':
         public_key=public_key
     )
 
-    import time
-
     for contest_id, contest in contest_id_to_contest.items():
-        start = time.time()
         print(f'Processing contest id = {contest_id}')
 
         num_candidates = len(contest['candidate_id_to_candidate_name'])
         print(f'Number of candidates = {num_candidates}')
         print(f'Number of voters = {len(contest["ballots"]):,}')
 
+        start = time.time()
         result = stv_tally(
             cob_ballots=contest['ballots'],
             seats=1,
@@ -39,13 +38,8 @@ if __name__ == '__main__':
             private_key_ring=private_key_ring,
             public_key=public_key
         )
-
-        print('Result')
-        print(result)
+        print(f'Time = {time.time() - start}')
 
         print('Elected candidates')
         for elected in result:
             print(contest['candidate_id_to_candidate_name'][elected])
-
-        print(f'Time = {time.time() - start}')
-        print()
