@@ -13,10 +13,13 @@ from typing import List, Set, Tuple
 from gmpy2 import mpz
 from tqdm import tqdm
 
-from cryptovote.ballots import CandidateOrderBallot, FirstPreferenceBallot, candidate_elimination_to_candidate_order, \
+from cryptovote.ballots import CandidateEliminationBallot, CandidateOrderBallot, FirstPreferenceBallot, candidate_elimination_to_candidate_order, \
     candidate_order_to_candidate_elimination, candidate_order_to_first_preference
-from cryptovote.damgard_jurik import PrivateKeyRing, PublicKey
+from cryptovote.damgard_jurik import EncryptedNumber, PrivateKeyRing, PublicKey
 from cryptovote.utils import debug, lcm
+
+
+import time
 
 
 def compute_first_preference_tallies(cob_ballots: List[CandidateOrderBallot],
@@ -52,6 +55,27 @@ def compute_first_preference_tallies(cob_ballots: List[CandidateOrderBallot],
     return fpb_ballots, decrypted_tallies
 
 
+def reweight_and_convert_ballot(fpb: FirstPreferenceBallot,
+                               d_lcm: int,
+                               elected: Set[int],
+                               tallies: List[int],
+                               quota: int,
+                               zero: EncryptedNumber) -> CandidateOrderBallot:
+    """ Reweight a single FirstPreferenceBallot and convert it to a CandidateOrderBallot."""
+    new_weight = zero
+
+    for i in range(len(fpb.candidates)):
+        fpb.weights[i] *= d_lcm
+
+        if fpb.candidates[i] in elected:
+            fpb.weights[i] *= tallies[i] - quota
+            fpb.weights[i] /= tallies[i]
+
+        new_weight += fpb.weights[i]
+
+    return CandidateOrderBallot(fpb.candidates, fpb.preferences, new_weight)
+
+
 def reweight_votes(fpb_ballots: List[FirstPreferenceBallot],
                    elected: Set[int],
                    quota: int,
@@ -67,30 +91,38 @@ def reweight_votes(fpb_ballots: List[FirstPreferenceBallot],
     num_candidates = len(candidates)
     d_lcm = mpz(1)
 
+    debug('Computing lcm of tallies')
+    # TODO: do we want to do the approximation from the paper?
     for i in range(num_candidates):
-        # Only consider the elected candidates
+        # Only include the tallies of elected candidates
         if candidates[i] in elected:
-            # TODO: do we want to do the approximation from the paper?
             d_lcm = lcm(d_lcm, tallies[i])
 
-    cob_ballots = []
-    zero = public_key.encrypt(0)
+    debug('Reweighting and converting FirstPreferenceBallots to CandidateOrderBallots')
+    reweight_and_fbp_to_cob = partial(
+        reweight_and_convert_ballot,
+        d_lcm=d_lcm,
+        elected=elected,
+        tallies=tallies,
+        quota=quota,
+        zero=public_key.encrypt(0)
+    )
 
-    for ballot in fpb_ballots:
-        new_weight = zero
-
-        for i in range(num_candidates):
-            ballot.weights[i] *= d_lcm
-
-            if candidates[i] in elected:
-                ballot.weights[i] *= tallies[i] - quota
-                ballot.weights[i] /= tallies[i]
-
-            new_weight += ballot.weights[i]
-
-        cob_ballots.append(CandidateOrderBallot(ballot.candidates, ballot.preferences, new_weight))
+    # Note: this is slower in parallel than sequentially so don't parallelize
+    cob_ballots = list(tqdm(map(reweight_and_fbp_to_cob, fpb_ballots), total=len(fpb_ballots)))
 
     return cob_ballots, d_lcm
+
+
+def update_preferences(ceb: CandidateEliminationBallot, zero: EncryptedNumber) -> CandidateEliminationBallot:
+    """ Updates the preferences of a ballot based on the eliminated candidates."""
+    prefix_sum = zero
+
+    for i in range(len(ceb.candidates)):
+        prefix_sum += ceb.eliminated[i]
+        ceb.preferences[i] -= prefix_sum
+
+    return ceb
 
 
 def eliminate_candidate_set(candidate_set: Set[int],
@@ -109,40 +141,35 @@ def eliminate_candidate_set(candidate_set: Set[int],
     eliminated = [mpz(1) if candidate in candidate_set else mpz(0) for candidate in cob_ballots[0].candidates]
     relevant_columns = {i for i in range(num_candidates) if eliminated[i] == 0}  # indices of non-eliminated candidates
 
-    # Convert from CandidateOrderBallots to CandidateEliminationBallots
-    ceb_ballots = []
-    zero = public_key.encrypt(0)
     cob_to_ceb = partial(
         candidate_order_to_candidate_elimination,
         eliminated=eliminated,
         private_key_ring=private_key_ring,
         public_key=public_key
     )
-
-    # Update preferences based on eliminated candidates
-    with Pool() as pool:
-        for ceb in tqdm(pool.imap(cob_to_ceb, cob_ballots), total=len(cob_ballots)):
-            prefix_sum = zero
-
-            for i in range(num_candidates):
-                prefix_sum += ceb.eliminated[i]
-                ceb.preferences[i] -= prefix_sum
-
-            ceb_ballots.append(ceb)
-
-    # Convert from CandidateEliminationBallot to CandidateOrderBallot
-    cob_ballots = []
+    update_preferences_fn = partial(
+        update_preferences,
+        zero=public_key.encrypt(0)
+    )
     ceb_to_cob = partial(
         candidate_elimination_to_candidate_order,
         private_key_ring=private_key_ring
     )
 
-    # Create new candidates and preferences with only remaining candidates
     with Pool() as pool:
-        for cob in tqdm(pool.imap(ceb_to_cob, ceb_ballots), total=len(ceb_ballots)):
-            updated_candidates = [cob.candidates[i] for i in relevant_columns]
-            updated_preferences = [cob.preferences[i] for i in relevant_columns]
-            cob_ballots.append(CandidateOrderBallot(updated_candidates, updated_preferences, cob.weight))
+        debug('Converting CandidateOrderBallots to CandidateEliminationBallots')
+        ceb_ballots = list(tqdm(pool.imap(cob_to_ceb, cob_ballots), total=len(cob_ballots)))
+
+        debug('Updating preferences based on eliminated candidates')
+        ceb_ballots = list(tqdm(pool.imap(update_preferences_fn, ceb_ballots), total=len(ceb_ballots)))
+
+        debug('Converting CandidateEliminationBallots to CandidateOrderBallots')
+        cob_ballots = list(tqdm(pool.imap(ceb_to_cob, ceb_ballots), total=len(ceb_ballots)))
+
+    debug('Removing candidates and preferences for candidates that have been eliminated')
+    for cob in cob_ballots:
+        cob.candidates = [cob.candidates[i] for i in relevant_columns]
+        cob.preferences = [cob.preferences[i] for i in relevant_columns]
 
     return cob_ballots
 
