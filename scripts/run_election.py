@@ -7,6 +7,30 @@ from cryptovote.protocols import stv_tally
 from scripts.load_ballot_data import load_ballot_data
 
 
+class MockPublicKey:
+    @staticmethod
+    def encrypt(x):
+        return x
+
+    @staticmethod
+    def encrypt_list(x):
+        return x
+
+
+class MockPrivateKeyRing:
+    @staticmethod
+    def decrypt(x):
+        return x
+
+    @staticmethod
+    def decrypt_list(x):
+        return x
+
+
+def mock_keygen():
+    return MockPublicKey(), MockPrivateKeyRing()
+
+
 if __name__ == '__main__':
     parser = ArgumentParser()
     parser.add_argument('--master_lookup', type=str, required=True,
@@ -23,14 +47,19 @@ if __name__ == '__main__':
                         help='The minimum number of PrivateKeyShares needed to decrypt an encrypted number.')
     parser.add_argument('--n_shares', type=int, default=3,
                         help='The number of PrivateKeyShares to generate.')
+    parser.add_argument('--no_encryption', action='store_true', default=False,
+                        help='Run the election without encryption')
     args = parser.parse_args()
 
-    public_key, private_key_ring = keygen(
-        n_bits=args.n_bits,
-        s=args.s,
-        threshold=args.threshold,
-        n_shares=args.n_shares
-    )
+    if args.no_encryption:
+        public_key, private_key_ring = mock_keygen()
+    else:
+        public_key, private_key_ring = keygen(
+            n_bits=args.n_bits,
+            s=args.s,
+            threshold=args.threshold,
+            n_shares=args.n_shares
+        )
     
     contest_id_to_contest = load_ballot_data(
         master_lookup_path=args.master_lookup,
