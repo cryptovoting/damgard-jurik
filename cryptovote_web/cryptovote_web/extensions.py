@@ -4,6 +4,7 @@ from flask_sqlalchemy import SQLAlchemy
 from os import urandom, makedirs
 from os.path import join, isdir, dirname
 from flask_login import LoginManager
+from flask_bcrypt import Bcrypt
 
 # Initialize database object
 db = SQLAlchemy()
@@ -13,6 +14,9 @@ login_manager = LoginManager()
 login_manager.session_protection = "strong"
 login_manager.login_view = "/login"
 login_manager.login_message = None
+
+# Initialize the password hasher
+bcrypt = Bcrypt()
 
 
 def install_secret_key(app, filename='secret.key'):

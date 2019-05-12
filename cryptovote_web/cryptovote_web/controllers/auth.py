@@ -1,11 +1,11 @@
 import os
 import webauthn
-from flask import jsonify, make_response, redirect, request, session, url_for, Blueprint, render_template
+from flask import jsonify, make_response, redirect, request, session, url_for, Blueprint, render_template, flash
 from flask_login import login_required, login_user, logout_user, current_user
 from ..helpers import generate_challenge, generate_ukey, election_exists
 from ..models import Authority, Election
 from ..settings import SERVER_NAME
-from ..extensions import db, login_manager
+from ..extensions import db, login_manager, bcrypt
 
 blueprint = Blueprint('auth', __name__)
 
@@ -69,6 +69,9 @@ def webauthn_begin_assertion(election):
                                   Authority.email == email).first()
     if not user:
         return make_response(jsonify({'fail': 'User does not exist.'}), 401)
+    if not user.webauthn:
+        session['email'] = email
+        return jsonify({'alt-login': 'password'})
     if not user.credential_id:
         return make_response(jsonify({'fail': 'Unknown credential ID.'}), 401)
 
@@ -145,6 +148,7 @@ def verify_credential_info(election):
             email=email,
             name=name,
             election=election_data,
+            webauthn=True,
             pub_key=webauthn_credential.public_key,
             credential_id=webauthn_credential.credential_id,
             sign_count=webauthn_credential.sign_count,
@@ -216,3 +220,28 @@ def logout(election):
 @election_exists
 def login(election):
     return render_template('auth/authority_login.html', election=election)
+
+
+@blueprint.route('/login-password', subdomain='<election>', methods=['GET','POST'])
+@election_exists
+def login_password(election):
+    if 'email' not in session:
+        return redirect(url_for('election.election_home', election=election.name))
+    user = Authority.query.filter(Election.name==election.name, Authority.email==session['email']).first()
+    if not user:
+        flash("User does not exist.")
+        return redirect(url_for('election.election_home', election=election.name))
+    if request.method == 'GET':
+        return render_template('auth/authority_login_password.html', election=election)
+    else:
+        password = request.form.get("password")
+        if not password:
+            flash("Password not submitted.")
+            return render_template('auth/authority_login_password.html', election=election)
+        if not bcrypt.check_password_hash(user.pw_hash, password):
+            flash("Invalid password.")
+            return render_template('auth/authority_login_password.html', election=election)
+        login_user(user)
+        if 'next' in request.args:
+            return redirect(request.args['next'])
+        return redirect(url_for('election.election_home', election=election.name))

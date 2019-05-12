@@ -1,9 +1,9 @@
 import re
 from flask import Blueprint, render_template, request, session, flash, redirect, url_for
-from flask_login import login_required
+from flask_login import login_required, logout_user, login_user, current_user
 from ..models import Election, UnconfirmedAuthority, Authority, Candidate
 from ..helpers import send_authority_confirm_email, election_exists
-from ..extensions import db
+from ..extensions import db, bcrypt
 
 blueprint = Blueprint('create_election', __name__)
 
@@ -97,6 +97,60 @@ def confirm_email():
     return redirect(url_for('create_election.register_identity', election=user.election_name))
 
 
+@blueprint.route('/create-password', subdomain='<election>', methods=['GET','POST'])
+def create_password(election):
+    for key in ['election', 'name', 'email', 'k']:
+        if key not in session:
+            return redirect(url_for('home.index'))
+    user = UnconfirmedAuthority.query.filter_by(email_key=session['k']).first()
+    if not user:
+        return redirect(url_for('home.index'))
+    if Authority.query.filter(Election.name == user.election_name, Authority.email == user.email).first():
+        return redirect(url_for('election.election_home', election=user.election_name))
+    session['election'] = user.election_name
+    session['email'] = user.email
+    session['name'] = user.name
+    if request.method == 'GET':
+        return render_template('create_election/create_password.html', election=election)
+    if request.method == 'POST':
+        print(request.form)
+        password = request.form.get('password')
+        confirm_password = request.form.get('confirm_password')
+        if not password or not confirm_password:
+            flash("Password must be specified.")
+            return render_template('create_election/create_password.html', election=election)
+        if password != confirm_password:
+            flash("Passwords do not match.")
+            return render_template('create_election/create_password.html', election=election)
+        if current_user.is_authenticated:
+            logout_user(current_user)
+        if Election.query.filter_by(name=election).first():
+            flash("Election already exists.")
+            return redirect(url_for('home.index'))
+        existing_user = Authority.query.filter(
+            Election.name == election, Authority.email == user.email).first()
+        if existing_user:
+            flash("User already exists.")
+            return redirect(url_for('election.election_home', election=election))
+        # Create the election
+        election_data = Election(election)
+        # Create the user
+        pw_hash = bcrypt.generate_password_hash(password)
+        authority = Authority(
+            email=user.email,
+            name=user.name,
+            election=election_data,
+            webauthn=False,
+            pw_hash=pw_hash
+            )
+        db.session.add(election_data)
+        db.session.add(authority)
+        db.session.commit()
+        # Login the new user
+        login_user(authority)
+        return redirect(url_for('create_election.seats', election=election))
+
+
 @blueprint.route('/setup', subdomain='<election>')
 def register_identity(election):
     for key in ['election', 'name', 'email', 'k']:
@@ -110,7 +164,7 @@ def register_identity(election):
     session['election'] = user.election_name
     session['email'] = user.email
     session['name'] = user.name
-    return render_template('create_election/register_identity.html')
+    return render_template('create_election/register_identity.html', election=election)
 
 
 @blueprint.route('/add-candidates', subdomain='<election>', methods=['GET', 'POST'])
