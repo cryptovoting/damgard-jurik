@@ -4,7 +4,7 @@ from typing import List
 from gmpy2 import mpz
 
 from cryptovote.ballots import CandidateOrderBallot
-from cryptovote.damgard_jurik import keygen, PrivateKeyShare, threshold_decrypt
+from cryptovote.damgard_jurik import keygen, PrivateKeyRing
 
 from scripts.load_ballot_data import load_ballot_data
 
@@ -12,7 +12,7 @@ from scripts.load_ballot_data import load_ballot_data
 def fake_tally(ballots: List[CandidateOrderBallot],
                seats: int,
                stop_candidate: int,
-               private_key_shares: List[PrivateKeyShare]) -> List[int]:
+               private_key_ring: PrivateKeyRing) -> List[int]:
     """ The main protocol of the ShuffleSum voting algorithm.
         Assumes there is at least one ballot.
         Returns a list of elected candidates. """
@@ -28,8 +28,8 @@ def fake_tally(ballots: List[CandidateOrderBallot],
     for ballot in ballots:
         decrypted_ballots.append([
             ballot.candidates,
-            [threshold_decrypt(preference, private_key_shares) for preference in ballot.preferences],
-            threshold_decrypt(ballot.weight, private_key_shares)
+            private_key_ring.decrypt_list(ballot.preferences),
+            private_key_ring.decrypt(ballot.weight)
         ])
 
     while len(c_rem)-offset > seats:
@@ -124,7 +124,7 @@ if __name__ == '__main__':
                         help='Path to a .txt file containing a ballot image')
     args = parser.parse_args()
 
-    public_key, private_key_shares = keygen(n_bits=64, s=1, threshold=3, n_shares=3)
+    public_key, private_key_ring = keygen(n_bits=64, s=1, threshold=3, n_shares=3)
 
     contest_id_to_contest = load_ballot_data(
         master_lookup_path=args.master_lookup,
@@ -146,7 +146,7 @@ if __name__ == '__main__':
             ballots=contest['ballots'],
             seats=1,
             stop_candidate=contest['stop_candidate_id'],
-            private_key_shares=private_key_shares
+            private_key_ring=private_key_ring
         )
 
         print('Result')

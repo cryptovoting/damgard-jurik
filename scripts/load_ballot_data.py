@@ -14,7 +14,7 @@ from collections import defaultdict
 from tqdm import tqdm
 
 from cryptovote.ballots import CandidateOrderBallot
-from cryptovote.damgard_jurik import keygen, PublicKey
+from cryptovote.damgard_jurik import PublicKey, keygen
 
 
 def load_ballot_data(master_lookup_path: str,
@@ -137,7 +137,7 @@ def load_ballot_data(master_lookup_path: str,
                     preferences.append(remaining_ranks.pop())
 
             # Encrypt preferences and weight
-            preferences = [public_key.encrypt(preference) for preference in preferences]
+            preferences = public_key.encrypt_list(preferences)
             weight = public_key.encrypt(1)
 
             # Create ballot
@@ -146,13 +146,15 @@ def load_ballot_data(master_lookup_path: str,
 
         # Create contest
         contest_id_to_contest[contest_id] = {
-            'ballots': ballots,
+            'ballots': ballots[:1000],
             'candidate_id_to_candidate_name': {
                 candidate_id: candidate_id_to_candidate_name[candidate_id]
                 for candidate_id in candidate_ids
             },
             'stop_candidate_id': stop_candidate_id
         }
+
+        break
 
     return contest_id_to_contest
 

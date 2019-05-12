@@ -8,7 +8,6 @@ https://people.csail.mit.edu/rivest/voting/papers/DamgardJurikNielsen-AGeneraliz
 """
 from functools import lru_cache
 from math import factorial
-from multiprocessing import Pool
 from secrets import randbelow
 from typing import Any, List, Tuple
 
@@ -20,9 +19,10 @@ from cryptovote.utils import int_to_mpz, crm, inv_mod, pow_mod
 
 
 class EncryptedNumber:
-    def __init__(self, public_key: 'PublicKey', value: int):
+    @int_to_mpz
+    def __init__(self, value: int, public_key: 'PublicKey'):
+        self.value = value
         self.public_key = public_key
-        self.value = mpz(value)
 
     def __add__(self, other: Any) -> 'EncryptedNumber':
         if not isinstance(other, EncryptedNumber):
@@ -32,8 +32,8 @@ class EncryptedNumber:
             raise ValueError("Attempted to add/subtract numbers encrypted against different public keys!")
 
         return EncryptedNumber(
-            public_key=self.public_key,
-            value=((self.value * other.value) % self.public_key.n_s_1)
+            value=((self.value * other.value) % self.public_key.n_s_1),
+            public_key=self.public_key
         )
 
     def __radd__(self, other: Any) -> 'EncryptedNumber':
@@ -47,13 +47,19 @@ class EncryptedNumber:
             raise ValueError("Attempted to add/subtract numbers encrypted against different public keys!")
 
         # Multiply other by -1 via inv_mod
-        other_inv = EncryptedNumber(other.public_key, inv_mod(other.value, other.public_key.n_s_1))
+        other_inv = EncryptedNumber(
+            value=inv_mod(other.value, other.public_key.n_s_1),
+            public_key=other.public_key
+        )
 
         return self.__add__(other_inv)
 
     def __rsub__(self, other: Any) -> 'EncryptedNumber':
         # Multiply self by -1 via inv_mod
-        self_inv = EncryptedNumber(self.public_key, inv_mod(self.value, self.public_key.n_s_1))
+        self_inv = EncryptedNumber(
+            value=inv_mod(self.value, self.public_key.n_s_1),
+            public_key=self.public_key
+        )
 
         return self_inv.__add__(other)
 
@@ -93,9 +99,11 @@ class PublicKey:
         # Choose random r in Z_n^*
         r = mpz(randbelow(self.n - 1)) + 1
         c = pow(self.n + 1, m, self.n_s_1) * pow(r, self.n_s, self.n_s_1) % self.n_s_1
-        c = EncryptedNumber(self, c)
 
-        return c
+        return EncryptedNumber(value=c, public_key=self)
+
+    def encrypt_list(self, m_list: List[int]) -> List[EncryptedNumber]:
+        return [self.encrypt(m) for m in m_list]
 
     def __eq__(self, other: Any) -> bool:
         if not isinstance(other, PublicKey):
@@ -103,20 +111,20 @@ class PublicKey:
 
         return self.__dict__ == other.__dict__
 
+    def __hash__(self) -> int:
+        return hash(tuple(sorted(self.__dict__.items())))
+
 
 class PrivateKeyShare:
     @int_to_mpz
-    def __init__(self, public_key: PublicKey, i: int, s_i: int, delta: int):
+    def __init__(self, public_key: PublicKey, i: int, s_i: int):
         self.public_key = public_key
         self.i = i
         self.s_i = s_i
-        self.delta = delta
-        self.two_delta_s_i = 2 * self.delta * self.s_i
+        self.two_delta_s_i = 2 * self.public_key.delta * self.s_i
 
     def decrypt(self, c: EncryptedNumber) -> int:
-        c_i = pow(c.value, self.two_delta_s_i, self.public_key.n_s_1)
-
-        return c_i
+        return pow(c.value, self.two_delta_s_i, self.public_key.n_s_1)
 
     def __eq__(self, other: Any) -> bool:
         if not isinstance(other, PrivateKeyShare):
@@ -124,39 +132,9 @@ class PrivateKeyShare:
 
         return self.__dict__ == other.__dict__
 
+    def __hash__(self) -> int:
+        return hash(tuple(sorted(self.__dict__.items())))
 
-@int_to_mpz
-def keygen(n_bits: int = 2048,
-           s: int = 3,
-           threshold: int = 5,
-           n_shares: int = 9) -> Tuple[PublicKey, List[PrivateKeyShare]]:
-    """ Generates a PublicKey and a list of PrivateKeyShares using Damgard-Jurik threshold variant."""
-    # Find n = p * q and m = p_prime * q_prime where p = 2 * p_prime + 1 and q = 2 * q_prime + 1
-    p, q = gen_safe_prime_pair(n_bits)
-    p_prime, q_prime = (p - 1) // 2, (q - 1) // 2
-    n, m = p * q, p_prime * q_prime
-
-    # Pre-compute for convenience
-    n_s = n ** s
-    n_s_m = n_s * m
-
-    # Find d such that d = 0 mod m and d = 1 mod n^s
-    d = crm(a_list=[0, 1], n_list=[m, n_s])
-
-    # Use Shamir secret sharing to share_secret d
-    shares = share_secret(
-        secret=d,
-        modulus=n_s_m,
-        threshold=threshold,
-        n_shares=n_shares
-    )
-
-    # Create PublicKey and PrivateKeyShares
-    delta = factorial(n_shares)
-    public_key = PublicKey(n=n, s=s, m=m, threshold=threshold, delta=delta)
-    private_key_shares = [PrivateKeyShare(public_key=public_key, i=i, s_i=s_i, delta=delta) for i, s_i in shares]
-
-    return public_key, private_key_shares
 
 @int_to_mpz
 def damgard_jurik_reduce(a: int, s: int, n: int) -> int:
@@ -194,67 +172,84 @@ def damgard_jurik_reduce(a: int, s: int, n: int) -> int:
     return i
 
 
-def get_unique_private_key_shares(private_key_shares: List[PrivateKeyShare]) -> List[PrivateKeyShare]:
-    """ Returns a list of unique PrivateKeyShares (i.e. (i, f(i)) pairs with unique i)."""
-    i_set = set()
-    unique_private_key_shares = []
+class PrivateKeyRing:
+    def __init__(self, private_key_shares: List[PrivateKeyShare]):
+        if len(private_key_shares) == 0:
+            raise ValueError('Must have at least one PrivateKeyShare')
 
-    for pk in private_key_shares:
-        if pk.i not in i_set:
-            unique_private_key_shares.append(pk)
-            i_set.add(pk.i)
+        if len({pks.public_key for pks in private_key_shares}) > 1:
+            raise ValueError('PrivateKeyShares do not have the same public key')
 
-    return unique_private_key_shares
+        public_key = private_key_shares[0].public_key
+        private_key_shares = set(private_key_shares)
 
+        if len(private_key_shares) < public_key.threshold:
+            raise ValueError('Number of unique PrivateKeyShares is less than the threshold to decrypt')
 
-def threshold_decrypt(c: EncryptedNumber, private_key_shares: List[PrivateKeyShare]) -> int:
-    """ Performs threshold decryption using a list of PrivateKeyShares."""
-    # Extract values from PublicKey
-    threshold, delta, s, n, n_s, n_s_1, n_s_m = \
-        c.public_key.threshold, c.public_key.delta, c.public_key.s, c.public_key.n, c.public_key.n_s, c.public_key.n_s_1, c.public_key.n_s_m
+        self.public_key = public_key
+        self.private_key_shares = list(private_key_shares)[:self.public_key.threshold]
+        self.i_list = [pks.i for pks in self.private_key_shares]
+        self.S = set(self.i_list)
+        self.inv_four_delta_squared = inv_mod(4 * (self.public_key.delta ** 2), self.public_key.n_s)
 
-    # Get unique PrivateKeyShares
-    private_key_shares = get_unique_private_key_shares(private_key_shares)
+    def decrypt(self, c: EncryptedNumber) -> int:
+        # Use PrivateKeyShares to decrypt
+        c_list = [pk.decrypt(c) for pk in self.private_key_shares]
 
-    if not len(private_key_shares) >= threshold:
-        raise ValueError(f'Need at least {threshold} unique PrivateKeyShares to decrypt but only have {len(private_key_shares)}.')
+        # Define lambda function
+        @int_to_mpz
+        def lam(i: int) -> int:
+            S_prime = self.S - {i}
+            l = self.public_key.delta % self.public_key.n_s_m
 
-    # Only need threshold PrivateKeyShares to decrypt
-    private_key_shares = private_key_shares[:threshold]
-    S = {pk.i for pk in private_key_shares}
+            for i_prime in S_prime:
+                l = l * i_prime * inv_mod(i_prime - i, self.public_key.n_s_m) % self.public_key.n_s_m
 
-    # Use PrivateKeyShares to decrypt
-    c_list = [pk.decrypt(c) for pk in private_key_shares]
-    i_list = [pk.i for pk in private_key_shares]
+            return l
 
-    # Define lambda function
-    @int_to_mpz
-    def lam(i: int) -> int:
-        S_prime = S - {i}
-        l = delta % n_s_m
+        # Decrypt
+        c_prime = mpz(1)
+        for c_i, i in zip(c_list, self.i_list):
+            c_prime = (c_prime * pow_mod(c_i, (2 * lam(i)), self.public_key.n_s_1)) % self.public_key.n_s_1
 
-        for i_prime in S_prime:
-            l = l * i_prime * inv_mod(i_prime - i, n_s_m) % n_s_m
+        c_prime = damgard_jurik_reduce(c_prime, self.public_key.s, self.public_key.n)
+        m = c_prime * self.inv_four_delta_squared % self.public_key.n_s
 
-        return l
+        return m
 
-    # Decrypt
-    c_prime = mpz(1)
-    for c_i, i in zip(c_list, i_list):
-        c_prime = (c_prime * pow_mod(c_i, (2 * lam(i)), n_s_1)) % n_s_1
-    
-    m = damgard_jurik_reduce(c_prime, s, n) * inv_mod(4 * (delta ** 2), n_s) % n_s
-
-    return m
+    def decrypt_list(self, c_list: List[EncryptedNumber]) -> List[int]:
+        return [self.decrypt(c) for c in c_list]
 
 
-def encrypt_list(m_list: List[int],
-                 public_key: PublicKey,
-                 parallel: bool = True) -> List[EncryptedNumber]:
-    pass
+def keygen(n_bits: int = 64,
+           s: int = 1,
+           threshold: int = 3,
+           n_shares: int = 3) -> Tuple[PublicKey, PrivateKeyRing]:
+    """ Generates a PublicKey and a PrivateKeyRing using Damgard-Jurik threshold variant."""
+    # Find n = p * q and m = p_prime * q_prime where p = 2 * p_prime + 1 and q = 2 * q_prime + 1
+    p, q = gen_safe_prime_pair(n_bits)
+    p_prime, q_prime = (p - 1) // 2, (q - 1) // 2
+    n, m = p * q, p_prime * q_prime
 
+    # Pre-compute for convenience
+    n_s = n ** s
+    n_s_m = n_s * m
 
-def threshold_decrypt_list(c_list: List[EncryptedNumber],
-                           private_key_shares: List[PrivateKeyShare],
-                           parallel: bool = True) -> List[int]:
-    pass
+    # Find d such that d = 0 mod m and d = 1 mod n^s
+    d = crm(a_list=[0, 1], n_list=[m, n_s])
+
+    # Use Shamir secret sharing to share_secret d
+    shares = share_secret(
+        secret=d,
+        modulus=n_s_m,
+        threshold=threshold,
+        n_shares=n_shares
+    )
+
+    # Create PublicKey and PrivateKeyShares
+    delta = factorial(n_shares)
+    public_key = PublicKey(n=n, s=s, m=m, threshold=threshold, delta=delta)
+    private_key_shares = [PrivateKeyShare(public_key=public_key, i=i, s_i=s_i) for i, s_i in shares]
+    private_key_ring = PrivateKeyRing(private_key_shares)
+
+    return public_key, private_key_ring

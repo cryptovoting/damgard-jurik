@@ -9,7 +9,7 @@ Unit tests for crypto.
 from secrets import randbelow
 import unittest
 
-from cryptovote.damgard_jurik import keygen, threshold_decrypt
+from cryptovote.damgard_jurik import keygen
 from cryptovote.prime_gen import gen_prime
 from cryptovote.shamir import Polynomial, reconstruct, share_secret
 
@@ -45,19 +45,19 @@ class TestDamgardJurik(unittest.TestCase):
              threshold = randbelow(10) + 1
              n_shares = 2 * threshold + randbelow(10)
 
-             public_key, private_key_shares = keygen(n_bits=n_bits, s=s, threshold=threshold, n_shares=n_shares)
+             public_key, private_key_ring = keygen(n_bits=n_bits, s=s, threshold=threshold, n_shares=n_shares)
 
              m = randbelow(public_key.n_s)
 
              c = public_key.encrypt(m)
-             m_prime = threshold_decrypt(c, private_key_shares)
+             m_prime = private_key_ring.decrypt(c)
 
              self.assertEqual(m, m_prime)
 
 
 class TestDamgardJurikHomomorphic(unittest.TestCase):
     def setUp(self):
-        self.public_key, self.private_key_shares = keygen(n_bits=64, s=3, threshold=5, n_shares=9)
+        self.public_key, self.private_key_ring = keygen(n_bits=64, s=3, threshold=5, n_shares=9)
 
     def test_homomorphic_add(self):
         for _ in range(10):
@@ -65,7 +65,7 @@ class TestDamgardJurikHomomorphic(unittest.TestCase):
 
             ciphertext_1, ciphertext_2 = self.public_key.encrypt(plaintext_1), self.public_key.encrypt(plaintext_2)
             ciphertext = ciphertext_1 + ciphertext_2
-            decrypted_plaintext = threshold_decrypt(ciphertext, self.private_key_shares)
+            decrypted_plaintext = self.private_key_ring.decrypt(ciphertext)
 
             self.assertNotEqual(plaintext_1, ciphertext_1.value)
             self.assertNotEqual(plaintext_2, ciphertext_2.value)
@@ -78,7 +78,7 @@ class TestDamgardJurikHomomorphic(unittest.TestCase):
 
             ciphertext = self.public_key.encrypt(plaintext)
             ciphertext = ciphertext * scalar
-            decrypted_plaintext = threshold_decrypt(ciphertext, self.private_key_shares)
+            decrypted_plaintext = self.private_key_ring.decrypt(ciphertext)
 
             self.assertNotEqual(plaintext, ciphertext.value)
             self.assertEqual(plaintext * scalar, decrypted_plaintext)
@@ -91,7 +91,7 @@ class TestDamgardJurikHomomorphic(unittest.TestCase):
 
             ciphertext = self.public_key.encrypt(plaintext)
             ciphertext = ciphertext / scalar
-            decrypted_plaintext = threshold_decrypt(ciphertext, self.private_key_shares)
+            decrypted_plaintext = self.private_key_ring.decrypt(ciphertext)
 
             self.assertNotEqual(plaintext, ciphertext.value)
             self.assertEqual(plaintext // scalar, decrypted_plaintext)
