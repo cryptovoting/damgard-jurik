@@ -12,3 +12,4 @@ webauthn
 uuid
 sendgrid
 ../cryptovote
+flask-bcrypt

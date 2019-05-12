@@ -19,12 +19,15 @@ class Authority(db.Model, FlaskLoginUser):
     public_key = db.Column(db.PickleType, unique=True, nullable=False)
     private_key = db.Column(db.PickleType, nullable=False)
 
-    ukey = db.Column(db.String(20), unique=True, nullable=False)
-    credential_id = db.Column(db.String(250), unique=True, nullable=False)
+    webauthn = db.Column(db.Boolean, nullable=False)
+    ukey = db.Column(db.String(20), unique=True, nullable=True)
+    credential_id = db.Column(db.String(250), unique=True, nullable=True)
     pub_key = db.Column(db.String(65), unique=True, nullable=True)
     sign_count = db.Column(db.Integer, default=0)
-    rp_id = db.Column(db.String(253), nullable=False)
-    icon_url = db.Column(db.String(2083), nullable=False)
+    rp_id = db.Column(db.String(253), nullable=True)
+    icon_url = db.Column(db.String(2083), nullable=True)
+
+    pw_hash = db.Column(db.Text, nullable=True)
 
     def __init__(self, **kwargs):
         self.email_key = str(uuid4())

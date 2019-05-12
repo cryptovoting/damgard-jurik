@@ -104,6 +104,11 @@ const getCredentialRequestOptionsFromServer = async (formData) => {
 const transformCredentialRequestOptions = (credentialRequestOptionsFromServer) => {
     let {challenge, allowCredentials} = credentialRequestOptionsFromServer;
 
+    if ('alt-login' in credentialRequestOptionsFromServer &&
+        credentialRequestOptionsFromServer['alt-login'] == 'password'){
+      window.location.href = "/login-password";
+    }
+
     challenge = Uint8Array.from(
         atob(challenge), c => c.charCodeAt(0));
 

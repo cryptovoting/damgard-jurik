@@ -13,8 +13,13 @@
         <form id="register-form" name="register" method="get">
             <div class="text-center mb-4" style="font-size:3em;">4</div>
             <div class="form-group text-center">
-              <label for="register"><h3>Register Identity</h3></label>
-              <button id="register" class="btn btn-primary btn-block btn-lg" style="background-color: #0084da;">Register</button>
+              <h3>How Would You Like to Authenticate?</h3>
+            </div>
+            <div class="form-group" style="margin-top: 50px;">
+              <button id="register" class="btn btn-primary btn-block btn-lg" style="background-color: #0084da;">Fingerprint/USB Security Key</button>
+            </div>
+            <div class="form-group" style="margin-top: 20px;">
+              <a href="{{ url_for('create_election.create_password', election=election) }}" class="btn btn-primary btn-block btn-lg" style="background-color: #0084da;">Password</a>
             </div>
         </form>
     </div>
