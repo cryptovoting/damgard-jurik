@@ -87,14 +87,7 @@ def reweight_votes(fpb_ballots: List[FirstPreferenceBallot],
 
     candidates = fpb_ballots[0].candidates
     num_candidates = len(candidates)
-    d_lcm = mpz(1)
-
-    debug('Computing lcm of tallies')
-    # TODO: do we want to do the approximation from the paper?
-    for i in range(num_candidates):
-        # Only include the tallies of elected candidates
-        if candidates[i] in elected:
-            d_lcm = lcm(d_lcm, tallies[i])
+    d_lcm = lcm(*[tallies[i] for i in range(num_candidates) if candidates[i] in elected])
 
     debug('Reweighting and converting FirstPreferenceBallots to CandidateOrderBallots')
     reweight_and_fbp_to_cob = partial(

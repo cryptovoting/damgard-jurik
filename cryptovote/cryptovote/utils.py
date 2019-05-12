@@ -17,13 +17,16 @@ DEBUG = True
 
 
 def set_debug(debug: bool):
-    """ Sets the debug flag."""
+    """Sets the debug flag.
+
+    :param debug: True to turn on debug printing, False otherwise.
+    """
     global DEBUG
     DEBUG = debug
 
 
 def debug(*args):
-    """ Prints debug statements."""
+    """Prints debug statements."""
     global DEBUG
 
     if DEBUG:
@@ -31,7 +34,11 @@ def debug(*args):
 
 
 def int_to_mpz(func: Callable) -> Callable:
-    """ Converts all int arguments to mpz."""
+    """A decorator which converts all int arguments to mpz.
+
+    :param func: The function to decorate.
+    :return: The function `func` but with all int arguments converted to mpz.
+    """
     @wraps(func)
     def func_wrapper(*args, **kwargs):
         return func(*[mpz(arg) if isinstance(arg, int) else arg for arg in args],
@@ -40,7 +47,11 @@ def int_to_mpz(func: Callable) -> Callable:
 
 
 def prod(nums: List[int]) -> int:
-    """ Returns nums[0] * num[1] * ..."""
+    """Returns the product of the numbers in the list.
+
+    :param nums: A list of integers.
+    :return: The product of the numbers in `nums`.
+    """
     product = mpz(1)
 
     for num in nums:
@@ -49,15 +60,37 @@ def prod(nums: List[int]) -> int:
     return product
 
 
-@int_to_mpz
-def lcm(a: int, b: int) -> int:
-    """ Find the least common multiple of two integers. """
+def _lcm(a: int, b: int) -> int:
+    """Finds the least common multiple of two integers.
+
+    :param a: An integer.
+    :param b: An integer.
+    """
     return a * b // gcd(a, b)
 
 
 @int_to_mpz
+def lcm(*args) -> int:
+    """Computes the least common multiple of an arbitrary number of integers.
+
+    :param args: The integers whose lcm will be found.
+    :return: The lcm of the integers.
+    """
+    l = mpz(1)
+    for arg in args:
+        l = _lcm(l, arg)
+    return l
+
+
+@int_to_mpz
 def pow_mod(a: int, b: int, m: int) -> int:
-    """ Computes a^b (mod m)."""
+    """Computes a^b (mod m).
+
+    :param a: The base a in the above equation.
+    :param b: The power b in the above equation.
+    :param m: The modulus m in the above equation.
+    :return: An integer with the result a^b (mod m).
+    """
     if b < 0:
         a = inv_mod(a, m)
         b = -b
@@ -67,9 +100,13 @@ def pow_mod(a: int, b: int, m: int) -> int:
 
 @int_to_mpz
 def extended_euclidean(a: int, b: int) -> Tuple[int, int]:
-    """ Uses the Extended Euclidean Algorithm to compute x and y s.t. ax + by = gcd(a, b)
+    """Uses the Extended Euclidean Algorithm to compute x and y such that ax + by = gcd(a, b).
 
     https://en.wikibooks.org/wiki/Algorithm_Implementation/Mathematics/Extended_Euclidean_algorithm#Python
+
+    :param a: The integer a in the above equation.
+    :param b: The integer b in the above equation.
+    :return: A tuple of integers x and y such that ax + by = gcd(a, b).
     """
     x0, x1, y0, y1 = mpz(0), mpz(1), mpz(1), mpz(0)
 
@@ -83,7 +120,12 @@ def extended_euclidean(a: int, b: int) -> Tuple[int, int]:
 
 @int_to_mpz
 def inv_mod(a: int, m: int) -> int:
-    """ Finds the inverse of a modulo m (i.e. b s.t. a*b = 1 (mod m))."""
+    """Finds the inverse of a modulo m (i.e. b s.t. a*b = 1 (mod m)).
+
+    :param a: The integer whose inverse will be found.
+    :param m: The modulus.
+    :return: The inverse of a modulo m.
+    """
     if a < 0:
         a = m + a
 
@@ -98,9 +140,11 @@ def inv_mod(a: int, m: int) -> int:
 
 
 def crm(a_list: List[int], n_list: List[int]) -> int:
-    """ Applies the Chinese Remainder Theorem.
+    """Applies the Chinese Remainder Theorem to find the unique x such that x = a_i (mod n_i) for all i.
 
-    Finds the unique x such that x = a_i (mod n_i) for all i.
+    :param a_list: A list of integers a_i in the above equation.
+    :param n_list: A list of integers b_i in the above equation.
+    :return: The unique integer x such that x = a_i (mod n_i) for all i.
     """
     a_list = [mpz(a_i) for a_i in a_list]
     n_list = [mpz(n_i) for n_i in n_list]
