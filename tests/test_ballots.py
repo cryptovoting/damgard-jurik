@@ -8,8 +8,9 @@ Unit tests for ballots.
 """
 import unittest
 
-from cryptovote.ballots import Ballot, CandidateOrderBallot, FirstPreferenceBallot, CandidateEliminationBallot, \
-    candidate_elimination_to_candidate_order, candidate_order_to_candidate_elimination, candidate_order_to_first_preference
+from cryptovote.ballots import Ballot, CandidateOrderBallot, FirstPreferenceBallot, CandidateEliminationBallot,\
+    candidate_elimination_to_candidate_order, candidate_order_to_candidate_elimination,\
+    candidate_order_to_first_preference
 from cryptovote.damgard_jurik import keygen
 
 

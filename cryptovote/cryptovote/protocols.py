@@ -13,13 +13,11 @@ from typing import List, Set, Tuple
 from gmpy2 import mpz
 from tqdm import tqdm
 
-from cryptovote.ballots import CandidateEliminationBallot, CandidateOrderBallot, FirstPreferenceBallot, candidate_elimination_to_candidate_order, \
-    candidate_order_to_candidate_elimination, candidate_order_to_first_preference
+from cryptovote.ballots import CandidateEliminationBallot, CandidateOrderBallot, FirstPreferenceBallot,\
+    candidate_elimination_to_candidate_order, candidate_order_to_candidate_elimination,\
+    candidate_order_to_first_preference
 from cryptovote.damgard_jurik import EncryptedNumber, PrivateKeyRing, PublicKey
 from cryptovote.utils import debug, lcm
-
-
-import time
 
 
 def compute_first_preference_tallies(cob_ballots: List[CandidateOrderBallot],
@@ -125,6 +123,14 @@ def update_preferences(ceb: CandidateEliminationBallot, zero: EncryptedNumber) -
     return ceb
 
 
+def remove_candidates(cob: CandidateOrderBallot, remaining_candidate_indices: Set[int]) -> CandidateOrderBallot:
+    """ Removes any candidates not present in remaining_candidate_indices from a ballot."""
+    cob.candidates = [cob.candidates[i] for i in remaining_candidate_indices]
+    cob.preferences = [cob.preferences[i] for i in remaining_candidate_indices]
+
+    return cob
+
+
 def eliminate_candidate_set(candidate_set: Set[int],
                             cob_ballots: List[CandidateOrderBallot],
                             private_key_ring: PrivateKeyRing,
@@ -139,7 +145,7 @@ def eliminate_candidate_set(candidate_set: Set[int],
     # The number of remaining candidates (note that they not necessarily have numbers 1 through num_candidates)
     num_candidates = len(cob_ballots[0].candidates)
     eliminated = [mpz(1) if candidate in candidate_set else mpz(0) for candidate in cob_ballots[0].candidates]
-    relevant_columns = {i for i in range(num_candidates) if eliminated[i] == 0}  # indices of non-eliminated candidates
+    remaining_candidate_indices = {i for i in range(num_candidates) if eliminated[i] == 0}
 
     cob_to_ceb = partial(
         candidate_order_to_candidate_elimination,
@@ -155,6 +161,10 @@ def eliminate_candidate_set(candidate_set: Set[int],
         candidate_elimination_to_candidate_order,
         private_key_ring=private_key_ring
     )
+    remove_candidates_fn = partial(
+        remove_candidates,
+        remaining_candidate_indices=remaining_candidate_indices
+    )
 
     with Pool() as pool:
         debug('Converting CandidateOrderBallots to CandidateEliminationBallots')
@@ -166,10 +176,9 @@ def eliminate_candidate_set(candidate_set: Set[int],
         debug('Converting CandidateEliminationBallots to CandidateOrderBallots')
         cob_ballots = list(tqdm(pool.imap(ceb_to_cob, ceb_ballots), total=len(ceb_ballots)))
 
+    # Note: this is slower in parallel than sequentially so don't parallelize
     debug('Removing candidates and preferences for candidates that have been eliminated')
-    for cob in cob_ballots:
-        cob.candidates = [cob.candidates[i] for i in relevant_columns]
-        cob.preferences = [cob.preferences[i] for i in relevant_columns]
+    cob_ballots = list(tqdm(map(remove_candidates_fn, cob_ballots), total=len(cob_ballots)))
 
     return cob_ballots
 

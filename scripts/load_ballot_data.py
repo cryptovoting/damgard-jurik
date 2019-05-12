@@ -146,15 +146,13 @@ def load_ballot_data(master_lookup_path: str,
 
         # Create contest
         contest_id_to_contest[contest_id] = {
-            'ballots': ballots[:1000],
+            'ballots': ballots,
             'candidate_id_to_candidate_name': {
                 candidate_id: candidate_id_to_candidate_name[candidate_id]
                 for candidate_id in candidate_ids
             },
             'stop_candidate_id': stop_candidate_id
         }
-
-        break
 
     return contest_id_to_contest
 

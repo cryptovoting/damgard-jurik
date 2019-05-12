@@ -4,7 +4,7 @@ from typing import List
 from gmpy2 import mpz
 
 from cryptovote.ballots import CandidateOrderBallot
-from cryptovote.damgard_jurik import keygen, PrivateKeyRing
+from cryptovote.damgard_jurik import PrivateKeyRing, keygen
 
 from scripts.load_ballot_data import load_ballot_data
 
