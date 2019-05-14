@@ -1,3 +1,11 @@
+#!/usr/bin/env python3
+"""
+setup.py
+Boucher, Govedič, Saowakon, Swanson 2019
+
+Setup script for installation.
+
+"""
 import setuptools
 
 setuptools.setup(
@@ -13,6 +21,7 @@ setuptools.setup(
     ],
     classifiers=[
         "Programming Language :: Python :: 3",
+        "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
     ]
 )
