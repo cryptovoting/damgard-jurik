@@ -3,4 +3,4 @@ import pkgutil
 
 __path__ = pkgutil.extend_path(__path__, __name__)
 
-from cryptovote.protocols import *
+from damgard_jurik.damgard_jurik import EncryptedNumber, PrivateKeyRing, PrivateKeyShare, PublicKey, keygen

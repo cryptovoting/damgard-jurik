@@ -4,7 +4,7 @@ crypto.py
 Boucher, Govedič, Saowakon, Swanson 2019
 
 Contains an implementation of the Damgard-Jurik threshold decryption scheme.
-https://people.csail.mit.edu/rivest/voting/papers/DamgardJurikNielsen-AGeneralizationOfPailliersPublicKeySystemWithApplicationsToElectronicVoting.pdf
+
 """
 from functools import lru_cache
 from math import factorial
@@ -13,9 +13,9 @@ from typing import Any, List, Tuple
 
 from gmpy2 import mpz
 
-from cryptovote.prime_gen import gen_safe_prime_pair
-from cryptovote.shamir import share_secret
-from cryptovote.utils import int_to_mpz, crm, inv_mod, pow_mod
+from damgard_jurik.prime_gen import gen_safe_prime_pair
+from damgard_jurik.shamir import share_secret
+from damgard_jurik.utils import int_to_mpz, crm, inv_mod, pow_mod
 
 
 class EncryptedNumber:

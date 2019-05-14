@@ -1,20 +1,15 @@
 import setuptools
 
 setuptools.setup(
-    name="cryptovote",
+    name="damgard-jurik",
     version="0.0.1",
     author="Boucher, Govedič, Saowakon, Swanson",
-    description="Secure, verifiable electronic voting using the"
-                "Paillier cryptosystem",
-    long_description="Enables the implementation of elections where each vote "
-                     "is cryptographically secured using the Pallier "
-                     "cryptosystem and the results of elections are "
-                     "verifiable via a public bulletin board.",
-    url="https://github.com/swansonk14/crypto-voting",
+    description="Multi-authority, homomorphic encryption using the Damgard-Jurik cryptosystem.",
+    long_description="Multi-authority, homomorphic encryption using the Damgard-Jurik cryptosystem.",
+    url="https://github.com/cryptovoting/damgard-jurik",
     packages=setuptools.find_packages(),
     install_requires=[
-        'gmpy2',
-        'tqdm'
+        'gmpy2'
     ],
     classifiers=[
         "Programming Language :: Python :: 3",

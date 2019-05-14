@@ -10,7 +10,7 @@ from typing import List, Tuple
 
 from gmpy2 import mpz
 
-from cryptovote.utils import int_to_mpz, inv_mod
+from damgard_jurik.utils import int_to_mpz, inv_mod
 
 
 class Polynomial:

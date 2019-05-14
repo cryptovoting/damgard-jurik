@@ -3,7 +3,7 @@
 utils.py
 Boucher, Govedič, Saowakon, Swanson 2019
 
-Contains useful utility functions.
+Contains useful mathematical utility functions.
 
 """
 from functools import wraps
@@ -11,26 +11,6 @@ from math import gcd
 from typing import Callable, List, Tuple
 
 from gmpy2 import mpz
-
-
-DEBUG = True
-
-
-def set_debug(debug: bool):
-    """Sets the debug flag.
-
-    :param debug: True to turn on debug printing, False otherwise.
-    """
-    global DEBUG
-    DEBUG = debug
-
-
-def debug(*args):
-    """Prints debug statements."""
-    global DEBUG
-
-    if DEBUG:
-        print(*args)
 
 
 def int_to_mpz(func: Callable) -> Callable:
