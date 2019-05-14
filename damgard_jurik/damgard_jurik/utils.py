@@ -40,28 +40,6 @@ def prod(nums: List[int]) -> int:
     return product
 
 
-def _lcm(a: int, b: int) -> int:
-    """Finds the least common multiple of two integers.
-
-    :param a: An integer.
-    :param b: An integer.
-    """
-    return a * b // gcd(a, b)
-
-
-@int_to_mpz
-def lcm(*args) -> int:
-    """Computes the least common multiple of an arbitrary number of integers.
-
-    :param args: The integers whose lcm will be found.
-    :return: The lcm of the integers.
-    """
-    l = mpz(1)
-    for arg in args:
-        l = _lcm(l, arg)
-    return l
-
-
 @int_to_mpz
 def pow_mod(a: int, b: int, m: int) -> int:
     """Computes a^b (mod m).

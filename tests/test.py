@@ -9,9 +9,9 @@ Unit tests for crypto.
 from secrets import randbelow
 import unittest
 
-from cryptovote.damgard_jurik import keygen
-from cryptovote.prime_gen import gen_prime
-from cryptovote.shamir import Polynomial, reconstruct, share_secret
+from damgard_jurik import keygen
+from damgard_jurik.prime_gen import gen_prime
+from damgard_jurik.shamir import Polynomial, reconstruct, share_secret
 
 
 class TestShamir(unittest.TestCase):
