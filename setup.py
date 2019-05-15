@@ -15,7 +15,7 @@ with open('README.md') as f:
 
 setuptools.setup(
     name='damgard-jurik',
-    version='0.0.2',
+    version='0.0.3',
     author='Nicholas Boucher, Luka Govedič, Pasapol Saowakon, Kyle Swanson',
     author_email='swansonk.14@gmail.com',
     description='Homomorphic encryption using the threshold variant of the Damgard-Jurik cryptosystem.',
