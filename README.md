@@ -1,6 +1,6 @@
 # Damgard-Jurik
 
-An implementation of the [Damgard-Jurik](https://people.csail.mit.edu/rivest/voting/papers/DamgardJurikNielsen-AGeneralizationOfPailliersPublicKeySystemWithApplicationsToElectronicVoting.pdf) multi-authority, homomorphic encryption cryptosystem.
+An implementation of the threshold variant of the [Damgard-Jurik](https://people.csail.mit.edu/rivest/voting/papers/DamgardJurikNielsen-AGeneralizationOfPailliersPublicKeySystemWithApplicationsToElectronicVoting.pdf) homomorphic encryption cryptosystem.
 
 ## Table of Contents
 
@@ -15,9 +15,15 @@ An implementation of the [Damgard-Jurik](https://people.csail.mit.edu/rivest/vot
 Requires Python 3.6+.
 
 ```bash
+pip install damgard-jurik
+```
+
+Alternatively, the code can be cloned and installed locally as follows.
+
+```bash
 git clone https://github.com/cryptovoting/damgard-jurik.git
 cd damgard-jurik
-pip install -e damgard_jurik
+pip install -e .
 ```
 *Note that the `-e` flag will instruct pip to install the package as "editable". That is, when changes are made to any part of the package during development, those changes will immediately be available system-wide on the activated python environment.*
 
@@ -25,7 +31,7 @@ All requirements for this package should be added to `setup.py`.
 
 ## Public and Private Keys
 
-In the multi-authority variant of Damgard-Jurik implemented in this repository, a key pair consists of single public key along with a private key that has been split into multiple components using [Shamir's secret sharing](https://en.wikipedia.org/wiki/Shamir%27s_Secret_Sharing). The public key encrypts messages while the shares of the private key all contribute a portion of the decryption without ever requiring reconstruction of the private key. Thus, trust is distributed among the holders of the private key shares.
+In the threshold variant of Damgard-Jurik implemented in this repository, a key pair consists of single public key along with a private key that has been split into multiple components using [Shamir's secret sharing](https://en.wikipedia.org/wiki/Shamir%27s_Secret_Sharing). The public key encrypts messages while the shares of the private key all contribute a portion of the decryption without ever requiring reconstruction of the private key. Thus, trust is distributed among the holders of the private key shares.
 
 In this implementation, the public key is a `PublicKey` object with an encrypt function while the private key shares are `PrivateKeyShare` objects with a decrypt function that performs a partial decryption using that share of the private key. A `PrivateKeyRing` object holds a set of `PrivateKeyShare`s and contains a decrypt function that calls each `PrivateKeyShare`'s decrypt function and combines the results to obtain the final decryption.
 

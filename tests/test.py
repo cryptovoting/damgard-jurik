@@ -3,7 +3,7 @@
 test.py
 Boucher, Govedič, Saowakon, Swanson 2019
 
-Unit tests for crypto.
+Contains unit tests for the damgard-jurik package.
 
 """
 from secrets import randbelow

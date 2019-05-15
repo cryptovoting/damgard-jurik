@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """
-crypto.py
+shamir.py
 Boucher, Govedič, Saowakon, Swanson 2019
 
-Implementation of Shamir secret sharing.
+Contains an implementation of Shamir's secret sharing.
+
 """
 from secrets import randbelow
 from typing import List, Tuple

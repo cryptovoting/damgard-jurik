@@ -3,7 +3,7 @@
 crypto.py
 Boucher, Govedič, Saowakon, Swanson 2019
 
-Contains an implementation of the Damgard-Jurik threshold decryption scheme.
+Contains an implementation of the threshold decryption variant of the Damgard-Jurik cryptosystem.
 
 """
 from functools import lru_cache
