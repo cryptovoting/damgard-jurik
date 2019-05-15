@@ -37,7 +37,7 @@ In this implementation, the public key is a `PublicKey` object with an encrypt f
 
 ## Key Generation
 
-To generate a `PublicKey` and corresponding `PrivateKeyRing`, run the following commands:
+To generate a `PublicKey` and the corresponding `PrivateKeyRing`, run the following commands:
 
 ```python
 from damgard_jurik import keygen
@@ -53,16 +53,14 @@ public_key, private_key_ring = keygen(
 The parameters to `keygen` are as follows:
 
 - `n_bits`: The number of bits of encryption used in the public key and private key shares.
-- `s`: The exponent to which the public key parameter `n` is raised (where `n = p * q` is the product of two `n_bits`-bit primes `p` and `q`.). Plaintexts live in the space `Z_n^s`.
+- `s`: The exponent to which the public key parameter `n` is raised (where `n = p * q` is the product of two `n_bits`-bit primes `p` and `q`.). Plaintexts are integers in the space `Z_n^s = {0, 1, ..., n^s - 1}`.
 - `threshold`: The minimum number of private key shares needed to decrypt an encrypted message.
 - `n_shares`: The number of private key shares to generate.
 
 
 ## Encryption and Decryption
 
-To encrypt an integer `m`, run `public_key.encrypt(m)`. This will return an `EncryptedNumber` containing the encryption of `m`.
-
-To decrypt an `EncryptedNumber` `c`, run `private_key_ring.decrypt(c)`. This will return an integer containing the decryption of `c`.
+Encryption and decryption are implemented as methods of the `PublicKey` and `PrivateKeyRing` classes, respectively.
 
 For example:
 
@@ -73,18 +71,20 @@ m_prime = private_key_ring.decrypt(c)
 # m_prime = 42
 ```
 
-Additionally, `PublicKey`s and `PrivateKingRing`s have a convenience method for encrypting and decrypting lists of integers, as shown below.
+Plaintexts like `m` are simply Python integers while ciphertexts (encrypted plaintexts) like `c` are instances of the `EncryptedNumber` class. `EncryptedNumber` objects contain an encryption of the plaintext along with a reference to the `PublicKey` used to encrypt the plaintext.
+
+Additionally, the `PublicKey` and `PrivateKingRing` classes have a convenience method for encrypting and decrypting lists of integers, as shown below.
 
 ```python
 m_list = [42, 33, 100]
-c_list = public_key.encrypt(m_list)
-m_prime_list = private_key_ring.decrypt(c_list)
+c_list = public_key.encrypt_list(m_list)
+m_prime_list = private_key_ring.decrypt_list(c_list)
 # m_prime_list = [42, 33, 100]
 ```
 
 ## Homomorphic Operations
 
-Due to the additively homomorphic nature of the Damgard-Jurik cryptosystem, encrypted numbers can be combined in such a way as to obtain an encryption of the sum of the associated plaintexts. Futhermore, encrypted numbers can be combined with un-encrypted integers in such a way as to obtain the product of the associated plaintext and the un-encrypted integer. For convenience, the `+`, `-`, `*`, and `/` operators have been overridden for `EncryptedNumbers` to implement these combinations.
+Due to the additively homomorphic nature of the Damgard-Jurik cryptosystem, ciphertexts can be combined in such a way as to obtain an encryption of the sum of the associated plaintexts. Futhermore, ciphertexts can be combined with un-encrypted integers in such a way as to obtain the product of the associated plaintext and the un-encrypted integer. For convenience, the `EncryptedNumber` class has overridden the `+`, `-`, `*`, and `/` operators to implement these operations.
 
 For example:
 
