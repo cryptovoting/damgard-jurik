@@ -182,6 +182,14 @@ class PublicKey:
         """
         return [self.encrypt(m) for m in m_list]
 
+    def encrypt_string(self, m: str) -> List[EncryptedNumber]:
+        """Encrypts a string using it's ASCII values.
+
+        :param m: The plaintext string to be encrypted.
+        :return: A list containing an EncryptedNumber for each character ASCII value in `m`.
+        """
+        return self.encrypt_list(map(ord, m))
+
     def __eq__(self, other: Any) -> bool:
         """Returns whether this PublicKey is equal to `other`.
 
@@ -353,6 +361,14 @@ class PrivateKeyRing:
         :return: A list containing the decryption of each EncryptedNumber in `c_list`.
         """
         return [self.decrypt(c) for c in c_list]
+
+    def decrypt_string(self, c_list: List[EncryptedNumber]) -> str:
+        """Decrypts each number in a list as a character in a string.
+
+        :param c_list: A list of EncryptedNumbers to be decrypted.
+        :return: A string containing a character for each decrypted EncryptedNumber in `c_list`.
+        """
+        return "".join([chr(self.decrypt(c)) for c in c_list])
 
 
 def keygen(n_bits: int = 64,
