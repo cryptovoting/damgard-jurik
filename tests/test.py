@@ -38,21 +38,21 @@ class TestShamir(unittest.TestCase):
 
 
 class TestDamgardJurik(unittest.TestCase):
-     def test_encrypt_decrypt(self):
-         for _ in range(10):
-             n_bits = randbelow(32) + 16
-             s = randbelow(5) + 1
-             threshold = randbelow(10) + 1
-             n_shares = 2 * threshold + randbelow(10)
+    def test_encrypt_decrypt(self):
+        for _ in range(10):
+            n_bits = randbelow(32) + 16
+            s = randbelow(5) + 1
+            threshold = randbelow(10) + 1
+            n_shares = 2 * threshold + randbelow(10)
 
-             public_key, private_key_ring = keygen(n_bits=n_bits, s=s, threshold=threshold, n_shares=n_shares)
+            public_key, private_key_ring = keygen(n_bits=n_bits, s=s, threshold=threshold, n_shares=n_shares)
 
-             m = randbelow(public_key.n_s)
+            m = randbelow(public_key.n_s)
 
-             c = public_key.encrypt(m)
-             m_prime = private_key_ring.decrypt(c)
+            c = public_key.encrypt(m)
+            m_prime = private_key_ring.decrypt(c)
 
-             self.assertEqual(m, m_prime)
+            self.assertEqual(m, m_prime)
 
 
 class TestDamgardJurikHomomorphic(unittest.TestCase):
