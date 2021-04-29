@@ -24,7 +24,7 @@ setuptools.setup(
     url='https://github.com/cryptovoting/damgard-jurik',
     packages=setuptools.find_packages(),
     install_requires=[
-        'pycryptodome'
+        'pycryptodomex'
     ],
     classifiers=[
         'Programming Language :: Python :: 3',

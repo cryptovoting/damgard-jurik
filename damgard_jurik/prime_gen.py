@@ -10,9 +10,9 @@ from secrets import randbits
 from typing import Tuple
 
 try:
-    from Crypto.Util.number import getPrime, isPrime
-except ImportError:
     from Cryptodome.Util.number import getPrime, isPrime
+except ImportError:
+    from Crypto.Util.number import getPrime, isPrime
 
 
 def gen_prime(n_bits: int) -> int:
