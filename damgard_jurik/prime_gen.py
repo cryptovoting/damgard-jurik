@@ -9,7 +9,10 @@ Contains methods for generating prime numbers.
 from secrets import randbits
 from typing import Tuple
 
-from Crypto.Util.number import getPrime, isPrime
+try:
+    from Crypto.Util.number import getPrime, isPrime
+except ImportError:
+    from Cryptodome.Util.number import getPrime, isPrime
 
 
 def gen_prime(n_bits: int) -> int:
