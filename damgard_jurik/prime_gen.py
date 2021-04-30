@@ -60,8 +60,12 @@ def gen_safe_prime(n_bits: int) -> int:
         if is_prime(q):
             p = 2 * q + 1
 
-            if is_prime(p):
-                return p
+            if (GMP_AVAILABLE):
+                if is_prime(p):
+                    return p
+            else:
+                if is_prime(p):
+                    return p
 
 
 def gen_safe_prime_pair(n_bits: int) -> Tuple[int, int]:
