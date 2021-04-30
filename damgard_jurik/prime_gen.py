@@ -64,7 +64,7 @@ def gen_safe_prime(n_bits: int) -> int:
                 if is_prime(p):
                     return p
             else:
-                if is_prime(p):
+                if is_prime(p, 15):
                     return p
 
 
