@@ -9,10 +9,25 @@ Contains methods for generating prime numbers.
 from secrets import randbits
 from typing import Tuple
 
-from gmpy2 import bit_set, is_prime, next_prime
+try:
+    try:
+        from gmpy2 import bit_set, is_prime, next_prime
+    except ImportError:
+        from gmpy import bit_set, is_prime, next_prime
+except ImportError:
+    GMP_AVAILABLE = False
+else:
+    GMP_AVAILABLE = True
 
+if (not GMP_AVAILABLE):
+    try:
+        from Cryptodome.Util.number import isPrime as is_prime
+        from Cryptodome.Util.number import getPrime as crypto_prime
+    except ImportError:
+        from Crypto.Util.number import isPrime as is_prime
+        from Crypto.Util.number import getPrime as crypto_prime
 
-def gen_prime(n_bits: int) -> int:
+def gmp_prime(n_bits: int) -> int:
     """Returns a prime number with `n_bits` bits.
 
     :param n_bits: The number of bits the prime number should contain.
@@ -23,6 +38,12 @@ def gen_prime(n_bits: int) -> int:
     p = next_prime(base)
 
     return p
+
+if (GMP_AVAILABLE):
+    gen_prime = gmp_prime
+else:
+    def gen_prime (n_bits: int) -> int:
+        return crypto_prime(n_bits)
 
 
 def gen_safe_prime(n_bits: int) -> int:
@@ -39,8 +60,12 @@ def gen_safe_prime(n_bits: int) -> int:
         if is_prime(q):
             p = 2 * q + 1
 
-            if is_prime(p):
-                return p
+            if (GMP_AVAILABLE):
+                if is_prime(p):
+                    return p
+            else:
+                if is_prime(p, 15):
+                    return p
 
 
 def gen_safe_prime_pair(n_bits: int) -> Tuple[int, int]:

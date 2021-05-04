@@ -11,11 +11,9 @@ from math import factorial
 from secrets import randbelow
 from typing import Any, List, Tuple
 
-from gmpy2 import mpz
-
 from damgard_jurik.prime_gen import gen_safe_prime_pair
 from damgard_jurik.shamir import share_secret
-from damgard_jurik.utils import int_to_mpz, crm, inv_mod, pow_mod
+from damgard_jurik.utils import int_to_mpz, crm, inv_mod, pow_mod, mpzCast
 
 
 class EncryptedNumber:
@@ -169,7 +167,7 @@ class PublicKey:
         :return: An EncryptedNumber containing the encryption of `m`.
         """
         # Choose random r in Z_n^*
-        r = mpz(randbelow(self.n - 1)) + 1
+        r = mpzCast(randbelow(self.n - 1)) + 1
         c = pow(self.n + 1, m, self.n_s_1) * pow(r, self.n_s, self.n_s_1) % self.n_s_1
 
         return EncryptedNumber(value=c, public_key=self)
@@ -271,17 +269,17 @@ def damgard_jurik_reduce(a: int, s: int, n: int) -> int:
     @lru_cache(int(s))
     @int_to_mpz
     def fact(k: int) -> int:
-        return mpz(factorial(k))
+        return mpzCast(factorial(k))
 
-    i = mpz(0)
+    i = mpzCast(0)
     for j in range(1, s + 1):
-        j = mpz(j)
+        j = mpzCast(j)
 
         t_1 = L(a % n_pow(j + 1))
         t_2 = i
 
         for k in range(2, j + 1):
-            k = mpz(k)
+            k = mpzCast(k)
 
             i = i - 1
             t_2 = t_2 * i % n_pow(j)
@@ -337,7 +335,7 @@ class PrivateKeyRing:
             return l
 
         # Decrypt
-        c_prime = mpz(1)
+        c_prime = mpzCast(1)
         for c_i, i in zip(c_list, self.i_list):
             c_prime = (c_prime * pow_mod(c_i, (2 * lam(i)), self.public_key.n_s_1)) % self.public_key.n_s_1
 

@@ -9,9 +9,7 @@ Contains an implementation of Shamir's secret sharing.
 from secrets import randbelow
 from typing import List, Tuple
 
-from gmpy2 import mpz
-
-from damgard_jurik.utils import int_to_mpz, inv_mod
+from damgard_jurik.utils import int_to_mpz, inv_mod, mpzCast
 
 
 class Polynomial:
@@ -24,7 +22,7 @@ class Polynomial:
         :param coeffs: The coefficients of x^0, x^1, x^2, ...
         :param modulus: The modulus of the field the polynomial is in.
         """
-        self.coeffs = [mpz(c_i) for c_i in coeffs]
+        self.coeffs = [mpzCast(c_i) for c_i in coeffs]
         self.modulus = modulus
 
     @int_to_mpz
@@ -34,10 +32,10 @@ class Polynomial:
         :param x: The input to the polynomial.
         :return: The integer f(x) where f is this polynomial.
         """
-        f_x = mpz(0)
+        f_x = mpzCast(0)
 
         for i, c_i in enumerate(self.coeffs):
-            f_x = (f_x + c_i * pow(x, mpz(i), self.modulus) % self.modulus) % self.modulus
+            f_x = (f_x + c_i * pow(x, mpzCast(i), self.modulus) % self.modulus) % self.modulus
 
         return f_x
 
@@ -70,7 +68,7 @@ def share_secret(secret: int,
     f = Polynomial(coeffs, modulus)
 
     # Use the polynomial to share the secret
-    X = [mpz(x) for x in range(1, n_shares + 1)]
+    X = [mpzCast(x) for x in range(1, n_shares + 1)]
     shares = [(x, f(x)) for x in X]
 
     return shares
@@ -88,12 +86,12 @@ def reconstruct(shares: List[Tuple[int, int]],
     :return: The secret.
     """
     # Convert to mpz
-    shares = [(mpz(x), mpz(f_x)) for x, f_x in shares]
+    shares = [(mpzCast(x), mpzCast(f_x)) for x, f_x in shares]
 
     # Reconstruct secret
-    secret = mpz(0)
+    secret = mpzCast(0)
     for i, (x_i, f_x_i) in enumerate(shares):
-        product = mpz(1)
+        product = mpzCast(1)
 
         for j, (x_j, _) in enumerate(shares):
             if i != j:

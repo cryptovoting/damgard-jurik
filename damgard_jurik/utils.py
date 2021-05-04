@@ -10,8 +10,22 @@ from functools import wraps
 from math import gcd
 from typing import Callable, List, Tuple
 
-from gmpy2 import mpz
 
+try:
+    try:
+        from gmpy2 import mpz
+    except ImportError:
+        from gmpy import mpz
+except ImportError:
+    GMP_AVAILABLE = False
+else:
+    GMP_AVAILABLE = True
+
+def mpzCast(num: int) -> int:
+    if (GMP_AVAILABLE):
+        return mpz(num)
+    else:
+        return num
 
 def int_to_mpz(func: Callable) -> Callable:
     """A decorator which converts all int arguments to mpz.
@@ -19,12 +33,14 @@ def int_to_mpz(func: Callable) -> Callable:
     :param func: The function to decorate.
     :return: The function `func` but with all int arguments converted to mpz.
     """
-    @wraps(func)
-    def func_wrapper(*args, **kwargs):
-        return func(*[mpz(arg) if isinstance(arg, int) else arg for arg in args],
-                    **{key: mpz(value) if isinstance(value, int) else value for key, value in kwargs.items()})
-    return func_wrapper
-
+    if (GMP_AVAILABLE):
+        @wraps(func)
+        def func_wrapper(*args, **kwargs):
+            return func(*[mpz(arg) if isinstance(arg, int) else arg for arg in args],
+                        **{key: mpz(value) if isinstance(value, int) else value for key, value in kwargs.items()})
+        return func_wrapper
+    else:
+        return func
 
 def prod(nums: List[int]) -> int:
     """Returns the product of the numbers in the list.
@@ -32,7 +48,7 @@ def prod(nums: List[int]) -> int:
     :param nums: A list of integers.
     :return: The product of the numbers in `nums`.
     """
-    product = mpz(1)
+    product = mpzCast(1)
 
     for num in nums:
         product *= num
@@ -66,7 +82,7 @@ def extended_euclidean(a: int, b: int) -> Tuple[int, int]:
     :param b: The integer b in the above equation.
     :return: A tuple of integers x and y such that ax + by = gcd(a, b).
     """
-    x0, x1, y0, y1 = mpz(0), mpz(1), mpz(1), mpz(0)
+    x0, x1, y0, y1 = mpzCast(0), mpzCast(1), mpzCast(1), mpzCast(0)
 
     while a != 0:
         q, b, a = b // a, a, b % a
@@ -104,8 +120,8 @@ def crm(a_list: List[int], n_list: List[int]) -> int:
     :param n_list: A list of integers b_i in the above equation.
     :return: The unique integer x such that x = a_i (mod n_i) for all i.
     """
-    a_list = [mpz(a_i) for a_i in a_list]
-    n_list = [mpz(n_i) for n_i in n_list]
+    a_list = [mpzCast(a_i) for a_i in a_list]
+    n_list = [mpzCast(n_i) for n_i in n_list]
 
     N = prod(n_list)
     y_list = [N // n_i for n_i in n_list]
