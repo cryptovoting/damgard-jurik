@@ -27,6 +27,8 @@ pip install -e .
 ```
 *Note that the `-e` flag will instruct pip to install the package as "editable". That is, when changes are made to any part of the package during development, those changes will immediately be available system-wide on the activated python environment.*
 
+For best performance, [install gmpy2](https://gmpy2.readthedocs.io/en/latest/intro.html#installation).
+
 All requirements for this package should be added to `setup.py`.
 
 ## Public and Private Keys
